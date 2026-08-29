@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="会計士英語">
+<meta name="theme-color" content="#ECEEE7">
+<title>会計士英語 すきまトレーナー</title>
+<style>
+:root{
+  --paper:#ECEEE7; --card:#F7F8F4; --ink:#1B211D; --sub:#6D776F; --line:#D2D7CD;
+  --dr:#27418C;      /* 借方インディゴ */
+  --cr:#B8402F;      /* 貸方ヴァーミリオン */
+  --moss:#4F7A4A;    /* 定着 */
+  --amber:#B07D1A;
+  --shadow:0 1px 0 rgba(27,33,29,.06), 0 8px 24px -18px rgba(27,33,29,.5);
+  --serif:Georgia,"Times New Roman",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic","Noto Sans JP","Segoe UI",sans-serif;
+}
+[data-scheme="dark"]{
+  --paper:#151916; --card:#1E241F; --ink:#E7EAE4; --sub:#939E95; --line:#2E362F;
+  --dr:#7C9BE0; --cr:#E58A7A; --moss:#8FBE88; --amber:#D9AE55;
+  --shadow:0 1px 0 rgba(0,0,0,.3), 0 8px 24px -18px #000;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper); color:var(--ink); font-family:var(--sans);
+  font-size:16px; line-height:1.6; overscroll-behavior-y:contain;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.wrap{max-width:520px;margin:0 auto;padding:0 16px 120px}
+.en{font-family:var(--serif)}
+button{font-family:inherit;font-size:inherit;color:inherit;border:none;background:none;cursor:pointer}
+:focus-visible{outline:2px solid var(--dr);outline-offset:2px}
+
+/* ---------- header ---------- */
+header{position:sticky;top:0;z-index:20;background:var(--paper);
+  border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.hbar{max-width:520px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:10px}
+.brand{font-weight:700;font-size:14px;letter-spacing:.04em}
+.brand small{display:block;font-weight:400;font-size:11px;color:var(--sub);letter-spacing:0}
+.spacer{flex:1}
+.iconbtn{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;
+  border:1px solid var(--line);background:var(--card);font-size:15px}
+
+/* ---------- 復習の階段 (signature) ---------- */
+.ladder{display:flex;align-items:flex-end;gap:4px;height:76px;margin:14px 0 6px}
+.rung{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px}
+.rungbar{width:100%;border-radius:5px 5px 2px 2px;background:var(--line);transition:height .5s cubic-bezier(.2,.8,.2,1)}
+.rungn{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.rungl{font-size:10px;color:var(--sub);letter-spacing:-.02em}
+.ladder .rung:nth-child(1) .rungbar{background:var(--cr)}
+.ladder .rung:nth-child(2) .rungbar{background:#C77A3F}
+.ladder .rung:nth-child(3) .rungbar{background:var(--amber)}
+.ladder .rung:nth-child(4) .rungbar{background:#7E9145}
+.ladder .rung:nth-child(5) .rungbar{background:var(--moss)}
+.ladder .rung:nth-child(6) .rungbar{background:var(--dr)}
+
+/* ---------- blocks ---------- */
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;
+  margin:12px 0;box-shadow:var(--shadow)}
+.eyebrow{font-size:11px;letter-spacing:.14em;color:var(--sub);text-transform:uppercase;margin-bottom:6px}
+h2{font-size:17px;margin:0 0 8px}
+.muted{color:var(--sub);font-size:13px}
+.row{display:flex;gap:8px;align-items:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+.mode{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);
+  border-radius:14px;padding:14px;margin-bottom:8px;box-shadow:var(--shadow);min-height:58px}
+.mode b{display:block;font-size:16px}
+.mode span{font-size:12px;color:var(--sub)}
+.mode:active{transform:scale(.99)}
+.mode.primary{border-color:var(--dr);border-width:2px}
+.mode .pill{float:right;font-size:11px;background:var(--dr);color:#fff;border-radius:999px;padding:2px 9px;
+  font-variant-numeric:tabular-nums}
+.mode.done .pill{background:var(--moss)}
+
+/* ---------- session ---------- */
+.phase{display:flex;gap:4px;margin:10px 0 4px}
+.ph{flex:1;height:4px;border-radius:2px;background:var(--line)}
+.ph.on{background:var(--dr)} .ph.done{background:var(--moss)}
+.phlabel{display:flex;justify-content:space-between;font-size:12px;color:var(--sub);margin-bottom:8px}
+
+.qcard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 16px;
+  min-height:150px;box-shadow:var(--shadow)}
+.chip{display:inline-block;font-size:11px;border:1px solid var(--line);border-radius:999px;
+  padding:2px 9px;color:var(--sub);margin:0 4px 8px 0}
+.chip.dr{color:var(--dr);border-color:var(--dr)}
+.front{font-size:26px;font-weight:600;line-height:1.35;word-break:break-word}
+.kana{font-size:13px;color:var(--sub);letter-spacing:.02em;margin-top:3px}
+.front + .kana{font-size:15px;margin-top:6px}
+.gl .kn{display:block;font-size:11.5px;color:var(--amber)}
+.front.small{font-size:19px;font-weight:500;line-height:1.6}
+.ansjp{font-size:23px;font-weight:700;color:var(--dr);margin:2px 0 8px}
+.hr{height:1px;background:var(--line);margin:12px 0}
+.exp{font-size:14px;white-space:pre-wrap;line-height:1.75}
+.vo{font-size:13px;color:var(--sub);margin:2px 0 0;padding-left:1em;text-indent:-1em}
+.mk-wd{border-bottom:2.5px solid var(--cr);padding-bottom:1px}
+.mk-vb{border-bottom:2.5px solid var(--dr);padding-bottom:1px}
+.mk-num{background:rgba(176,125,26,.22);border-radius:4px;padding:0 3px}
+.mk-date{box-shadow:inset 0 0 0 1.5px var(--amber);border-radius:4px;padding:0 3px}
+.sec{margin-top:14px}
+.sec h4{margin:0 0 5px;font-size:12px;letter-spacing:.1em;color:var(--sub);font-weight:700}
+.gl{display:flex;gap:8px;font-size:13.5px;padding:3px 0;line-height:1.5}
+.gl b{font-family:var(--serif);font-weight:600;flex:0 0 auto;max-width:52%}
+.gl span{color:var(--sub);flex:1}
+.mkl{font-size:13px;padding:3px 0;line-height:1.5}
+.mkl b{font-family:var(--serif);color:var(--cr)}
+.hintbtn{display:inline-block;margin-top:12px;font-size:13px;border:1px solid var(--dr);color:var(--dr);
+  border-radius:999px;padding:7px 14px}
+.legend{font-size:11px;color:var(--sub);margin-top:8px;line-height:1.7}
+.step5{font-size:13px;line-height:1.9}
+.ox{font-size:30px;font-weight:800}
+.ox.o{color:var(--moss)} .ox.x{color:var(--cr)}
+
+/* ---------- answer bar (thumb zone) ---------- */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:linear-gradient(to top,var(--paper) 72%,rgba(0,0,0,0));
+  padding:10px 16px calc(12px + env(safe-area-inset-bottom))}
+.barin{max-width:520px;margin:0 auto;display:flex;gap:8px}
+.big{flex:1;min-height:60px;border-radius:14px;border:1px solid var(--line);background:var(--card);
+  font-weight:700;font-size:15px;box-shadow:var(--shadow)}
+.big small{display:block;font-weight:400;font-size:11px;color:var(--sub);margin-top:2px}
+.big.ng{border-color:var(--cr);color:var(--cr)}
+.big.mid{border-color:var(--amber);color:var(--amber)}
+.big.ok{border-color:var(--moss);color:var(--moss)}
+.big.solid{background:var(--dr);color:#fff;border-color:var(--dr)}
+.big.solid small{color:rgba(255,255,255,.75)}
+.big:active{transform:scale(.98)}
+.choice{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);
+  border-radius:12px;padding:13px 14px;margin-bottom:7px;min-height:50px;font-size:15px}
+.choice.pick{border-color:var(--dr);border-width:2px}
+.choice.right{border-color:var(--moss);background:rgba(79,122,74,.10)}
+.choice.wrong{border-color:var(--cr);background:rgba(184,64,47,.10)}
+
+/* ---------- dashboard ---------- */
+.meter{height:9px;border-radius:5px;background:var(--line);overflow:hidden;margin-top:4px}
+.meter i{display:block;height:100%;background:var(--moss)}
+.tline{display:flex;justify-content:space-between;font-size:13px;margin-top:11px}
+.tline b{font-variant-numeric:tabular-nums;font-weight:600}
+.tl{position:relative;height:30px;border-radius:6px;background:var(--line);margin-top:4px}
+.tl i{position:absolute;top:0;height:18px;background:var(--moss);border-radius:3px;min-width:3px}
+.tl u{position:absolute;top:19px;font-size:10px;color:var(--sub);text-decoration:none;transform:translateX(-50%)}
+.spark{display:flex;align-items:flex-end;gap:3px;height:48px;margin-top:8px}
+.spark div{flex:1;background:var(--dr);border-radius:3px 3px 0 0;min-height:2px;opacity:.85}
+.stat{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.stat div b{display:block;font-size:22px;font-variant-numeric:tabular-nums}
+.stat div span{font-size:11px;color:var(--sub)}
+.wk{display:flex;gap:4px;align-items:flex-end;height:56px}
+.wk div{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--sub)}
+.wk i{display:block;width:100%;background:var(--amber);border-radius:3px 3px 0 0;min-height:2px}
+.list li{list-style:none;display:flex;justify-content:space-between;gap:10px;padding:7px 0;
+  border-bottom:1px solid var(--line);font-size:14px}
+.list{margin:0;padding:0}
+.list li:last-child{border:none}
+.list em{font-style:normal;color:var(--cr);font-variant-numeric:tabular-nums;font-size:13px}
+input[type=search],select{width:100%;padding:11px 12px;border-radius:11px;border:1px solid var(--line);
+  background:var(--card);color:var(--ink);font-size:15px}
+label.opt{display:flex;justify-content:space-between;align-items:center;padding:10px 0;
+  border-bottom:1px solid var(--line);font-size:14px}
+.seg{display:flex;gap:6px}
+.seg button{flex:1;padding:9px 0;border:1px solid var(--line);border-radius:10px;background:var(--card);font-size:14px}
+.seg button.on{border-color:var(--dr);color:var(--dr);font-weight:700}
+textarea{width:100%;min-height:88px;padding:10px;border-radius:11px;border:1px solid var(--line);
+  background:var(--card);color:var(--ink);font-size:12px;font-family:ui-monospace,Menlo,monospace;
+  line-height:1.4;resize:vertical;-webkit-user-select:text;user-select:text}
+.warn{background:rgba(184,64,47,.10);border:1px solid var(--cr);border-radius:12px;padding:11px 13px;
+  margin:12px 0;font-size:13px;color:var(--cr)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:96px;background:var(--ink);color:var(--paper);
+  padding:9px 16px;border-radius:999px;font-size:13px;z-index:60;opacity:0;transition:opacity .25s}
+.toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header><div class="hbar">
+  <div class="brand">会計士英語 すきまトレーナー<small id="hsub">令和9年短答・英語対策</small></div>
+  <div class="spacer"></div>
+  <button class="iconbtn" id="navHome" title="ホーム">⌂</button>
+  <button class="iconbtn" id="navDash" title="学習状況">◍</button>
+  <button class="iconbtn" id="navMore" title="設定">≡</button>
+</div></header>
+<div class="wrap" id="app"></div>
+<div class="bar" id="bar" style="display:none"><div class="barin" id="barin"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const EMBEDDED = null;
+const DKEY='engtrainer_data_v1';
+let DATA=null, CARDS=[], BYID={}, UNITS=[], PRI=[];
+function initData(d){
+  DATA=d; CARDS=d.c; BYID={}; CARDS.forEach(c=>BYID[c.id]=c);
+  UNITS=d.un; PRI=d.pri; LEX=null; KANA=null;
+}
+
+/* 間隔復習：スライド18「翌日・3日後・1週間後・2週間後」＋定着確認 */
+const STEPS = [0, 1, 3, 7, 14, 30];
+const STEPLABEL = ['当日','翌日','3日後','1週間','2週間','1か月'];
+
+const WORDT = ['w','pr','vb','ch','gr'];     // 単語プール
+const PROBT = ['tf','sc','cz','rd','cl','cb'];  // 英文問題プール
+
+const KEY='engtrainer_v1';
+let S = null, view='home', ses=null;
+
+/* 保存先の自動判定：Claudeのアーティファクト内／ブラウザのローカル保存／保存なし */
+let PERSIST='none';
+const MEM={}, BAK=KEY+'_bak';
+function readAll(k){
+  const out=[];
+  try{ const v=localStorage.getItem(k); if(v!=null) out.push(v); }catch(e){}
+  if(MEM[k]!=null) out.push(MEM[k]);
+  return out;
+}
+function stateRank(v){      /* 学習済みカード数と保存時刻で「新しい方」を選ぶ */
+  try{ const o=JSON.parse(v); if(!o||!o.cards) return null;
+    return {o, n:Object.keys(o.cards).length, ts:o.ts||0, v}; }catch(e){ return null; }
+}
+function best(list){
+  let b=null;
+  for(const v of list){ const c=stateRank(v); if(!c) continue;
+    if(!b || c.n>b.n || (c.n===b.n && c.ts>b.ts)) b=c; }
+  return b? b.v : null;
+}
+const Store={
+  /* 保存先が複数あるので、いちばん進んでいるものを採用する */
+  async get(k){
+    const cand=readAll(k).concat(readAll(BAK));
+    if(window.storage && window.storage.get){
+      for(const key of [k,BAK]){
+        try{ const r=await window.storage.get(key); if(r && r.value!=null) cand.push(r.value); }catch(e){}
+      }
+    }
+    return best(cand);
+  },
+  /* ブラウザ側は同期で確実に書き、Claude側にも書く */
+  async set(k,v){
+    MEM[k]=v; let ok=false;
+    try{ localStorage.setItem(k,v); ok=true; }catch(e){}
+    if(window.storage && window.storage.set){
+      try{ await window.storage.set(k,v); ok=true; }catch(e){}
+    }
+    return ok;
+  },
+  async backup(v){
+    MEM[BAK]=v;
+    try{ localStorage.setItem(BAK,v); }catch(e){}
+    if(window.storage && window.storage.set){ try{ await window.storage.set(BAK,v); }catch(e){} }
+  }
+};
+async function probe(){
+  const t=KEY+'__probe';
+  if(window.storage && window.storage.set){
+    try{ await window.storage.set(t,'1'); PERSIST='claude'; return; }catch(e){}
+  }
+  try{ localStorage.setItem(t,'1'); localStorage.removeItem(t); PERSIST='local'; return; }catch(e){}
+  PERSIST='none';
+}
+const PERSIST_LABEL={claude:'Claudeアプリ内に保存', local:'この端末のブラウザに保存', none:'保存されません'};
+
+/* ---------------- state ---------------- */
+function today(){const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)}
+function addDays(s,n){const d=new Date(s+'T00:00:00');d.setDate(d.getDate()+n);
+  d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)}
+function daysBetween(a,b){return Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/86400000)}
+
+function blank(){return {v:1, ov:3, cards:{}, log:{}, newPerDay:10, unitMax:14, theme:'light',
+  streak:0, last:'', started:today(), placement:null, order:null}}
+
+async function load(){
+  await probe();
+  try{ const v = await Store.get(KEY); S = v ? JSON.parse(v) : blank(); }
+  catch(e){ S = blank(); }
+  if(!S || !S.cards) S = blank();
+  if(!S.order || S.ov!==3){ S.order = buildOrder(); S.ov = 3; }
+  bakN = Object.keys(S.cards).length;
+}
+let saveT=null, lastSaved=0, bakN=0;
+function serialize(){ S.ts=Date.now(); return JSON.stringify(S); }
+async function flush(){
+  const v=serialize();
+  const ok=await Store.set(KEY, v);
+  if(ok) lastSaved=Date.now(); else if(PERSIST!=='none') PERSIST='none';
+  const n=Object.keys(S.cards).length;
+  if(n>=bakN+5){ bakN=n; Store.backup(v); }      /* 進んだときだけ控えを取る */
+}
+function save(){ clearTimeout(saveT); saveT=setTimeout(flush,250); }
+function saveNow(){ clearTimeout(saveT);
+  const v=serialize();
+  try{ localStorage.setItem(KEY,v); lastSaved=Date.now(); }catch(e){}
+  MEM[KEY]=v;
+  if(window.storage && window.storage.set){ try{ window.storage.set(KEY,v); }catch(e){} }
+}
+
+/* 学習順：ステージ順 → 種類（つながり・ペア・動詞→単語）→ 出現順 */
+/* レジュメの教える順（Ⅱ-2 つながり → Ⅱ-3 ペア → Ⅱ-5 動詞）を最優先に置き，
+   そのあとで単語をステージ順に配る。英文問題は Ⅱ-4 場面英文 から始める。 */
+function buildOrder(){
+  const rank = {ch:0, pr:1, vb:2, gr:3, w:4};
+  const ws = CARDS.filter(c=>WORDT.includes(c.t)).sort((a,b)=>{
+    const ra=rank[a.t], rb=rank[b.t], ca=ra<=2?0:1, cb=rb<=2?0:1;
+    if(ca!==cb) return ca-cb;
+    if(ca===0) return (ra-rb) || (a.u-b.u) || (a.id-b.id);
+    return (a.u-b.u) || (ra-rb) || (a.id-b.id);
+  }).map(c=>c.id);
+  const pw = x => x.t==='sc'?0 : x.t==='cz'?1 : x.t==='rd'?2 : (x.t==='tf'&&x.tp==='文法')?3
+                : x.t==='cl'?4 : x.t==='cb'?5 : 6;
+  const ps = CARDS.filter(c=>PROBT.includes(c.t)).sort((a,b)=>
+    (pw(a)-pw(b)) || (a.u-b.u) || (a.id-b.id)).map(c=>c.id);
+  return {w:ws, p:ps};
+}
+function pickBy(pool, pred, n){
+  const t=today(), ids=S.order[pool].filter(id=>pred(BYID[id]));
+  const nw=ids.filter(id=>!S.cards[id]);
+  const due=ids.filter(id=>S.cards[id] && S.cards[id].d<=t);
+  const rest=ids.filter(id=>S.cards[id] && S.cards[id].d>t);
+  return nw.concat(due, rest).slice(0,n);
+}
+
+/* ---------------- SRS ---------------- */
+function st(id){ return S.cards[id] || null; }
+function dueList(pool){
+  const t=today();
+  return S.order[pool].filter(id=>{const x=S.cards[id]; return x && x.d<=t;});
+}
+function newList(pool, n){
+  const out=[];
+  for(const id of S.order[pool]){
+    if(S.cards[id]) continue;
+    if(BYID[id].u > S.unitMax) continue;
+    out.push(id); if(out.length>=n) break;
+  }
+  return out;
+}
+function grade(id, g){          /* g: 0=✕ 1=△ 2=◯ */
+  const t=today();
+  let x = S.cards[id];
+  if(!x) x = S.cards[id] = {s:0, d:t, n:0, ng:0, ok:0, seen:''};
+  x.n++; x.seen=t;
+  if(g===2){ x.ok++; x.s = Math.min(x.s+1, STEPS.length-1); }
+  else if(g===1){ x.s = Math.max(1, x.s); }
+  else { x.ng++; x.s = 0; }
+  const iv = STEPS[x.s];
+  x.d = iv===0 ? t : addDays(t, iv);
+  const L = S.log[t] || (S.log[t]={a:0,o:0,m:0,new:0});
+  L.a++; if(g===2)L.o++; if(g===0)L.m++;
+  if(x.n===1) L.new++;
+  if(S.last!==t){ S.streak = (S.last && daysBetween(S.last,t)===1) ? S.streak+1 : 1; S.last=t; }
+  save();
+}
+
+/* ---------- 学習時間の計測 ----------
+   画面が見えていて、かつ直前に操作があるときだけ数える。
+   ホーム画面に戻る／画面が消える／2分放置 のいずれでも即座に止める。 */
+const IDLE_MS=120000, GAPCUT=20000, BLOCKMIN=20;
+let lastAct=Date.now(), lastTick=Date.now(), curBlock=0, curStart=null, idleRun=0;
+function minOfDay(){ const d=new Date(); return d.getHours()*60+d.getMinutes(); }
+function todayLog(){ const t=today(); return S.log[t] || (S.log[t]={a:0,o:0,m:0,new:0}); }
+function isVisible(){
+  if(typeof document.visibilityState==='string') return document.visibilityState==='visible';
+  return !document.hidden;
+}
+function closeBlock(){
+  if(curBlock>=BLOCKMIN){ const L=todayLog(); (L.bl=L.bl||[]).push([curStart==null?minOfDay():curStart, curBlock]); }
+  curBlock=0; curStart=null; idleRun=0; save();
+}
+function addTime(sec){
+  const L=todayLog(); L.sec=(L.sec||0)+sec;
+  if(L.sec%15===0) save();
+}
+function tick(){
+  const now=Date.now(), gap=now-lastTick; lastTick=now;
+  if(gap>GAPCUT && curBlock>0) closeBlock();          /* 長く離れていた分は捨てる */
+  const studying = (view==='ses' && ses) || view==='place';
+  const active = studying && isVisible() && (now-lastAct)<IDLE_MS;
+  if(active){
+    const sec=Math.max(1, Math.min(Math.round(gap/1000), 3));
+    if(curBlock===0) curStart=minOfDay();
+    curBlock+=sec; idleRun=0;
+    if(ses){ ses.active=(ses.active||0)+sec; ses.phaseElapsed=(ses.phaseElapsed||0)+sec; }
+    addTime(sec); paintTimer();
+  } else if(curBlock>0){
+    idleRun+=Math.max(1, Math.round(gap/1000));
+    if(idleRun>=15) closeBlock();
+  }
+}
+function paintTimer(){
+  if(view!=='ses' || !ses) return;
+  const p=ses.M.phases[ses.pi]; if(!p) return;
+  const el=document.querySelector('.phlabel span:last-child'); if(!el) return;
+  el.textContent = p.sec ? fmtLeft(p.sec-(ses.phaseElapsed||0)) : ('経過 '+mmss(ses.active||0));
+}
+function mmss(s){ return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0'); }
+function fmtLeft(x){ return x>=0 ? ('残り '+mmss(x)) : ('+'+mmss(-x)+' 超過'); }
+function mins(sec){ return Math.round((sec||0)/60); }
+function hhmm(m){ return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); }
+function blocksOf(d){
+  const L=S.log[d]; if(!L) return [];
+  const b=(L.bl||[]).slice();
+  if(d===today() && curBlock>=BLOCKMIN) b.push([curStart==null?minOfDay():curStart, curBlock]);
+  return b;
+}
+
+/* ---------- 進捗の持ち運び（端末をまたぐ同期はできないため手動で移す） ---------- */
+const EPOCH=new Date('2020-01-01T00:00:00');
+function dnum(d){ return Math.round((new Date(d+'T00:00:00')-EPOCH)/86400000); }
+function dstr(n){ const d=new Date(EPOCH.getTime()+n*86400000);
+  d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); }
+function exportStr(){
+  const cs=[]; for(const id in S.cards){ const x=S.cards[id];
+    cs.push([id,x.s,dnum(x.d),x.n,x.ng,x.ok].join('.')); }
+  const lg=[]; for(const d in S.log){ const l=S.log[d];
+    lg.push([dnum(d),l.a,l.o,l.m,l.new,l.sec||0,
+      (l.bl||[]).map(b=>b[0]+'-'+b[1]).join('+')].join('.')); }
+  return ['ET2', S.newPerDay, S.unitMax, S.streak, dnum(S.last||today()), dnum(S.started||today()),
+    (S.placement==null?'-':S.placement), cs.join(','), lg.join(',')].join('|');
+}
+function importStr(v){
+  try{
+    const p=v.trim().split('|');
+    if((p[0]!=='ET1' && p[0]!=='ET2') || p.length<9) return false;
+    const N=blank(); N.order=buildOrder(); N.ov=3;
+    N.newPerDay=+p[1]||10; N.unitMax=+p[2]||14; N.streak=+p[3]||0;
+    N.last=dstr(+p[4]); N.started=dstr(+p[5]); N.placement=(p[6]==='-'?null:+p[6]);
+    if(p[7]) for(const t of p[7].split(',')){ const a=t.split('.');
+      N.cards[a[0]]={s:+a[1], d:dstr(+a[2]), n:+a[3], ng:+a[4], ok:+a[5], seen:''}; }
+    if(p[8]) for(const t of p[8].split(',')){ const a=t.split('.');
+      const L={a:+a[1], o:+a[2], m:+a[3], new:+a[4]};
+      if(a.length>5){ L.sec=+a[5]||0;
+        L.bl=(a[6]||'').split('+').filter(Boolean).map(x=>{const q=x.split('-');return [+q[0],+q[1]];}); }
+      N.log[dstr(+a[0])]=L; }
+    N.theme=S.theme; S=N; return true;
+  }catch(e){ return false; }
+}
+
+/* ---------- 進捗をファイルで持ち出す（アプリ内の保存が消える環境の保険） ---------- */
+function stamp(){
+  const d=new Date(), z=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}${z(d.getMonth()+1)}${z(d.getDate())}_${z(d.getHours())}${z(d.getMinutes())}`;
+}
+function downloadProgress(){
+  const v=exportStr();
+  try{
+    const b=new Blob([v],{type:'text/plain'});
+    const u=URL.createObjectURL(b);
+    const a=document.createElement('a');
+    a.href=u; a.download=`英語すきま_進捗_${stamp()}.txt`;
+    document.body.appendChild(a); a.click();
+    setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(u); }, 1000);
+    S.bak=Date.now(); save();
+    toast('保存先を選んでください');
+  }catch(e){ toast('保存できませんでした'); }
+}
+function copyProgress(){
+  const v=exportStr();
+  ioText=v;
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(v).then(()=>{ S.bak=Date.now(); save(); toast('コピーしました'); },
+        ()=>toast('欄の文字を全選択してコピーしてください'));
+      return;
+    }
+  }catch(e){}
+  toast('欄の文字を全選択してコピーしてください');
+}
+/* 最後の控えより後に学習していれば「未保存」 */
+function unsaved(){
+  const last = S.last ? new Date(S.last+'T23:59:59').getTime() : 0;
+  return Object.keys(S.cards).length>0 && (!S.bak || S.bak < (S.ts||0)-60000);
+}
+function backupPanel(big){
+  return `<div class="panel" style="${big?'border-color:var(--cr);border-width:2px':''}">
+    <div class="eyebrow">進捗の控え${big?' — 未保存':''}</div>
+    ${big?`<div style="font-size:14px;margin-bottom:10px">この開き方では、アプリを終了すると学習記録が消えることがあります。
+      <b>今日の分をここで控えておいてください。</b></div>`:''}
+    <div class="seg" style="margin-bottom:8px">
+      <button data-copyp="1">コピー</button>
+      <button data-savep="1">ファイルに保存</button>
+    </div>
+    <textarea id="io" placeholder="ここに出た文字列をメモアプリに貼るか、「ファイルに保存」でファイルアプリに置いてください。">${esc(ioText)}</textarea>
+    <div class="seg" style="margin-top:8px">
+      <button data-imp="1">貼り付けから復元</button>
+      <label style="flex:1;padding:9px 0;border:1px solid var(--line);border-radius:10px;
+        background:var(--card);font-size:14px;text-align:center">ファイルから復元
+        <input type="file" id="pfile" accept=".txt,text/plain" style="display:none"></label>
+    </div>
+  </div>`;
+}
+
+/* ---------------- session ---------------- */
+const MODES = {
+  full:{name:'15分ルーティン', phases:[
+    {k:'new',  label:'新出10語',    sec:300, get:()=>newList('w', S.newPerDay)},
+    {k:'due',  label:'前日までの復習', sec:180, get:()=>dueList('w').slice(0,40)},
+    {k:'prob', label:'英文問題',     sec:300, get:()=>probPick(2)},
+    {k:'miss', label:'間違えた語だけ', sec:120, get:()=>[]}]},
+  ten:{name:'10分コース', phases:[
+    {k:'new',  label:'新出語',   sec:180, get:()=>newList('w', Math.min(10,S.newPerDay))},
+    {k:'due',  label:'復習',     sec:120, get:()=>dueList('w').slice(0,25)},
+    {k:'prob', label:'英文問題1問',sec:240, get:()=>probPick(1)},
+    {k:'miss', label:'取りこぼし',sec:60,  get:()=>[]}]},
+  one:{name:'1分だけ', phases:[
+    {k:'due',  label:'5枚だけ', sec:90, get:()=>{const d=dueList('w'); return d.length?d.slice(0,5):newList('w',5);}}]},
+  rev:{name:'復習だけ', phases:[
+    {k:'due',  label:'期限が来たカード', sec:0, get:()=>dueList('w').concat(dueList('p'))},
+    {k:'miss', label:'間違えた分', sec:0, get:()=>[]}]},
+  core:{name:'レジュメの型', phases:[
+    {k:'new',  label:'つながり・対になる語・重要動詞', sec:0,
+     get:()=>pickBy('w', c=>c.t==='ch'||c.t==='pr'||c.t==='vb', 12)},
+    {k:'prob', label:'場面英文（1場面で複数語を復習）', sec:0,
+     get:()=>pickBy('p', c=>c.t==='sc', 3)},
+    {k:'prob2',label:'空欄補充・計算・組合せ問題', sec:0,
+     get:()=>pickBy('p', c=>c.t==='cz'||c.t==='cl'||c.t==='cb', 2)},
+    {k:'miss', label:'間違えた分', sec:0, get:()=>[]}]},
+  prob:{name:'英文問題だけ', phases:[
+    {k:'prob', label:'英文問題', sec:0, get:()=>probPick(4)},
+    {k:'miss', label:'間違えた分', sec:0, get:()=>[]}]}
+};
+function probPick(n){
+  const d = dueList('p'); const out = d.slice(0,n);
+  if(out.length<n){ for(const id of S.order.p){ if(S.cards[id]) continue;
+    if(BYID[id].u > S.unitMax) continue; out.push(id); if(out.length>=n) break; } }
+  return out;
+}
+function startSession(mode){
+  const M = MODES[mode];
+  ses = {mode, M, pi:0, queue:[], miss:[], i:0, shown:false, pick:null, graded:false, hint:false,
+         t0:Date.now(), active:0, phaseElapsed:0, done:0, right:0};
+  lastAct=Date.now(); lastTick=Date.now();
+  loadPhase();
+  if(ses.pi>=ses.M.phases.length || !ses.queue.length){ ses=null; toast('いま出せるカードがありません'); return; }
+  view='ses'; render();
+}
+function loadPhase(){
+  while(ses.pi < ses.M.phases.length){
+    const p = ses.M.phases[ses.pi];
+    ses.queue = p.k==='miss' ? ses.miss.slice() : p.get();
+    ses.i=0; ses.shown=false; ses.pick=null; ses.graded=false; ses.hint=false; ses.phaseElapsed=0;
+    if(ses.queue.length) return;
+    ses.pi++;
+  }
+  ses.queue=[];
+}
+function nextCard(){
+  ses.shown=false; ses.pick=null; ses.graded=false; ses.hint=false; ses.i++;
+  if(ses.i>=ses.queue.length){ ses.pi++; loadPhase(); }
+  if(ses.pi>=ses.M.phases.length){ view='fin'; }
+  render();
+}
+function score(id, g){
+  grade(id, g);
+  const p = ses.M.phases[ses.pi];
+  if(g===0 && !ses.miss.includes(id)) ses.miss.push(id);
+  if(g===2 && p.k==='miss') ses.miss = ses.miss.filter(x=>x!==id);
+}
+function answer(g){ const id=ses.queue[ses.i];
+  score(id,g); ses.done++; if(g===2) ses.right++; nextCard(); }
+/* 選択式・○×は選んだ時点で自動採点する */
+function autoScore(ok){
+  const id = ses.queue[ses.i];
+  score(id, ok?2:0);
+  ses.done++; if(ok) ses.right++;
+  ses.graded=true; ses.shown=true;
+}
+/* 自動採点のあと「自信なかった」を押したとき：ログは二重計上せず間隔だけ戻す */
+function regrade(g){
+  const id = ses.queue[ses.i], x = S.cards[id];
+  if(x){ x.s = (g===0) ? 0 : Math.max(1, Math.min(x.s, 1));
+         x.d = STEPS[x.s]===0 ? today() : addDays(today(), STEPS[x.s]); save(); }
+  nextCard();
+}
+
+/* ---------- 英文の分解（レジュメⅣ「５ステップ」の自動マーキング） ---------- */
+const EXTRA={
+ 'based on the following information':'以下の情報に基づき','select the correct':'正しいものを選びなさい',
+ 'select the amount':'金額を選びなさい','assume that':'〜と仮定する','which of the following':'次のうちどれか',
+ 'as of':'〜現在（時点＝B/S）','for the year ended':'〜に終了した年度（期間＝P/L）',
+ 'at the closing date':'決算日に','during the period':'期中に','during the year':'期中に',
+ 'at the end of the year':'年度末に','in accordance with':'〜に従って','with respect to':'〜に関して',
+ 'such as':'〜のような','in some circumstances':'一定の状況では','under japanese accounting standards':'日本基準の下で',
+ 'is generally':'原則として〜である','entered into a contract':'契約を締結した','paid the full amount':'全額を支払った',
+ 'on account':'掛けで','on a monthly basis':'月割計算で','a full refund':'全額返金',
+ 'reasonably estimated':'合理的に見積もった','best combination':'最も適切な組合せ',
+ 'financial statements':'財務諸表','accounting treatment':'会計処理','accounting standards':'会計基準',
+ 'accounting policies':'会計方針','profit or loss':'損益','gain or loss':'損益',
+ 'carrying amount':'帳簿価額','book value':'帳簿価額','fair value':'時価','acquisition cost':'取得原価',
+ 'net assets':'純資産','net income':'当期純利益','useful life':'耐用年数','residual value':'残存価額',
+ 'straight-line method':'定額法','depreciation expense':'減価償却費','accumulated depreciation':'減価償却累計額',
+ 'cost of goods sold':'売上原価','net realizable value':'正味売却価額','impairment loss':'減損損失',
+ 'performance obligation':'履行義務','transfer of control':'支配の移転','parent company':'親会社',
+ 'consolidated financial statements':'連結財務諸表','identifiable assets and liabilities':'識別可能資産・負債',
+ 'foreign exchange':'為替','exchange rate':'為替相場','closing rate':'決算日為替相場',
+ 'historical rate':'取引発生時為替相場','average rate':'期中平均為替相場','balance sheet date':'貸借対照表日',
+ 'future economic benefits':'将来の経済的便益','undiscounted future cash flows':'割引前将来キャッシュ・フロー',
+ 'scope of consolidation':'連結の範囲','significantly':'著しく','materially':'重要な影響を与えるほど',
+ 'immaterial':'重要性の乏しい','materiality':'重要性','subsequent':'事後的な','estimated':'見積もられた',
+ 'incurred':'発生した','earned':'獲得した','declined':'下落した','fell':'下落した','satisfied':'充足された',
+ 'delivered':'引き渡した','assumed':'引き受けた','eliminated':'消去された','translated':'換算された',
+ 'write-down':'評価損','shrinkage':'減耗','indication':'兆候','opinion':'意見','auditor':'監査人',
+ 'management':'経営者','assurance':'保証','misstatement':'虚偽表示','sufficient':'十分な',
+ 'appropriate':'適切な','evidence':'証拠','procedures':'手続','risk':'リスク','assertion':'アサーション',
+ 'management accounting':'管理会計','management accounting information':'管理会計情報',
+ 'not only':'〜だけでなく','but also':'〜も（また）','accounting department':'経理部',
+ 'corporate planning department':'経営企画部','external confirmation':'確認（外部確認）',
+ 'external confirmations':'確認（外部確認）','audit evidence':'監査証拠','existence':'実在性',
+ 'recoverability':'回収可能性','balances':'残高','provide':'提供する','utilized':'利用される',
+ 'prepared':'作成される','applicable':'適用される','requirements':'要件','expenditure':'支出',
+ 'depreciable amount':'要償却額','indefinite':'確定していない','outstanding shares':'発行済株式',
+ 'due to':'〜のため','however':'ただし・しかし','while':'一方で','whereas':'〜であるのに対し',
+ 'therefore':'したがって','because':'なぜなら','resulting':'その結果生じる','remaining':'残りの'};
+const STOPW=new Set(['the','a','an','of','in','on','at','to','and','or','for','by','is','are','was','were',
+ 'be','been','being','it','its','their','this','that','these','those','with','from','as','has','have','had',
+ 'will','would','there','they','we','you','than','then','when','which','who','what','how','also','some',
+ 'each','both','more','most','less','over','under','into','out','up','down','if','but','so','per','company',
+ 'companies','entity','entities','following','same','other','others','two','one','date','amount','end']);
+let LEX=null, KANA=null;
+function lexicon(){
+  if(LEX) return LEX;
+  LEX=new Map(); KANA=new Map();
+  for(const c of CARDS){ if(c.t!=='w') continue;
+    const k=c.e.toLowerCase().replace(/[.,;:]+$/,'').trim();
+    if(k && !LEX.has(k)){ LEX.set(k,c.j); if(c.k) KANA.set(k,c.k); } }
+  for(const k in EXTRA) if(!LEX.has(k)) LEX.set(k,EXTRA[k]);
+  return LEX;
+}
+function kanaOf(en){ lexicon(); return KANA.get(en.toLowerCase().replace(/[.,;:]+$/,'').trim())||''; }
+/* この英文で押さえる語を拾う（長い語句を優先） */
+function glossary(text){
+  const L=lexicon(), toks=[];
+  const re=/[A-Za-z][A-Za-z\-']*/g; let m;
+  while((m=re.exec(text))) toks.push({i:m.index, w:m[0], e:m.index+m[0].length});
+  const used=new Array(toks.length).fill(false), out=[];
+  for(let n=6;n>=1;n--){
+    for(let i=0;i+n<=toks.length;i++){
+      let busy=false; for(let k=i;k<i+n;k++) if(used[k]){busy=true;break;}
+      if(busy) continue;
+      const a=toks[i].i, b=toks[i+n-1].e;
+      const raw=text.slice(a,b);
+      let s0=raw.toLowerCase().replace(/\s+/g,' ').trim();
+      let hit=L.get(s0) || L.get(s0.replace(/[,]/g,''));
+      if(!hit){ hit=L.get(s0.replace(/s$/,'')) || L.get(s0.replace(/ies$/,'y')); }
+      if(!hit && n===1){
+        if(STOPW.has(s0)) continue;
+        hit=L.get(s0.replace(/ed$/,'')) || L.get(s0.replace(/ed$/,'e')) || L.get(s0.replace(/ing$/,''));
+      }
+      if(hit){ for(let k=i;k<i+n;k++) used[k]=true; out.push({i:a, e:raw, j:hit}); }
+    }
+  }
+  out.sort((x,y)=>x.i-y.i);
+  const seen=new Set();
+  return out.filter(o=>{const k=o.e.toLowerCase(); if(seen.has(k)) return false; seen.add(k); return true;}).slice(0,14);
+}
+/* 結論を変える語（レジュメⅢ「強すぎる表現」「助動詞の強さ」「差し替えパターン」） */
+const MARKS=[
+ [/\bnot only\b/gi,'「not only A but also B（AだけでなくBも）」。単独の否定・限定ではない'],
+ [/\bis required to\b/gi,'義務：要求される'],[/\bare required to\b/gi,'義務：要求される'],
+ [/\bmay not\b/gi,'許されない（禁止）'],[/\bmust not\b/gi,'してはならない（禁止）'],
+ [/\b(must|shall)\b/gi,'義務：〜しなければならない。許容と区別する'],
+ [/\bshould\b/gi,'原則・推奨。義務ほど強くない'],
+ [/\b(may|can)\b/gi,'許容：〜することができる。義務ではない'],
+ [/\bnever\b/gi,'決して〜ない。例外が一つでもあれば誤り'],
+ [/\b(always|all|only|every|any)\b/gi,'強い限定。例外がないか疑う'],
+ [/\bimmediately\b/gi,'直ちに。段階を飛ばしていないか'],
+ [/\bregardless of\b/gi,'〜にかかわらず。強い表現だが正しい場合もある'],
+ [/\bunder any circumstances\b/gi,'いかなる場合も。例外の有無を確認'],
+ [/\bunless\b/gi,'if…not（〜でない限り）。前後関係が逆になりやすい'],
+ [/\bneither\b/gi,'neither A nor B＝AもBも〜ない'],
+ [/\b(no|not)\b/gi,'否定。結論が反転する'],
+ [/\bgenerally\b/gi,'原則として。例外がある含み'],
+ [/\b(included|includes|include)\b/gi,'含む ⇔ exclude（除外する）'],
+ [/\b(excluded|excludes|exclude)\b/gi,'除外する ⇔ include（含む）'],
+ [/\b(increase[sd]?)\b/gi,'増加 ⇔ decrease（減少）'],
+ [/\b(decrease[sd]?)\b/gi,'減少 ⇔ increase（増加）'],
+ [/\bbefore\b/gi,'前 ⇔ after（後）。時点の前後で結論が変わる'],
+ [/\bafter\b/gi,'後 ⇔ before（前）。時点の前後で結論が変わる'],
+ [/\bnoncurrent\b/gi,'固定（非流動）⇔ current（流動）'],
+ [/\bcurrent\b/gi,'流動 ⇔ noncurrent（固定）'],
+ [/\b(beginning)\b/gi,'期首 ⇔ ending（期末）'],[/\b(ending)\b/gi,'期末 ⇔ beginning（期首）'],
+ [/\bhowever\b/gi,'逆接。ただし書きが本体のことがある'],
+ [/\b(while|whereas)\b/gi,'対比。前半と後半で主語が入れ替わる']
+];
+const VBP=[
+ /\b(?:is|are|was|were|be|been|being)\s+(?:generally\s+)?[a-z]+(?:ed|n)\b/gi,
+ /\b(?:recogniz|measur|record|report|classif|allocat|includ|exclud|transferr?|settl|issu|purchas|acquir|amortiz|depreciat|translat|eliminat|calculat|determin|appl|prepar|sold|sell|own|hold|held|paid|pay)(?:e|es|ed|s|ies|ied|ing)?\b/gi
+];
+const NUMP=/[¥$][\d,]+(?:\.\d+)?(?:\s*(?:million|billion))?|\b\d[\d,]*(?:\.\d+)?\s*(?:%|percent|products?|shares?|years?|months?|days?)\b/gi;
+const DATEP=/\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s*(?:20)?X?\d*|\b(?:20)?X\d\b/gi;
+
+function markHTML(text){
+  const collect=(re,cls,note)=>{ const out=[]; re.lastIndex=0; let m;
+    while((m=re.exec(text))){ if(!m[0].trim()) continue;
+      out.push({a:m.index,b:m.index+m[0].length,cls,note,t:m[0]});
+      if(m.index===re.lastIndex) re.lastIndex++; }
+    return out; };
+  /* 結論を変える語を最優先で確保し、そのあと動詞・金額・日付を重ならない範囲で足す */
+  let keep=[];
+  const place=(list)=>{
+    list.sort((x,y)=> x.a-y.a || (y.b-y.a)-(x.b-x.a));
+    for(const sp of list){
+      if(keep.some(k=> sp.a < k.b && k.a < sp.b)) continue;
+      keep.push(sp);
+    }
+  };
+  let mk=[]; MARKS.forEach(([re,note])=>{ mk=mk.concat(collect(re,'mk-wd',note)); });
+  place(mk);
+  let vb=[]; VBP.forEach(re=>{ vb=vb.concat(collect(re,'mk-vb',null)); });
+  place(vb);
+  place(collect(DATEP,'mk-date',null));
+  place(collect(NUMP,'mk-num',null));
+  keep.sort((x,y)=>x.a-y.a);
+  let html='', pos=0;
+  for(const sp of keep){ html+=esc(text.slice(pos,sp.a))+'<span class="'+sp.cls+'">'+esc(sp.t)+'</span>'; pos=sp.b; }
+  html+=esc(text.slice(pos));
+  const notes=[]; const seen=new Set();
+  for(const sp of keep){ if(sp.note && !seen.has(sp.note)){ seen.add(sp.note); notes.push([sp.t,sp.note]); } }
+  return {html, notes};
+}
+function voHTML(vo){
+  return (vo||[]).map(x=>`<div class="gl"><b>${esc(x[0])}${x[2]?`<span class="kn">${esc(x[2])}</span>`:''}</b>
+    <span>${esc(x[1]||'')}</span></div>`).join('');
+}
+function notesHTML(notes){
+  if(!notes || !notes.length) return '';
+  return `<div class="sec"><h4>結論を変える語</h4>`+
+    notes.slice(0,6).map(n=>`<div class="mkl"><b>${esc(n[0])}</b> … ${esc(n[1])}</div>`).join('')+`</div>`;
+}
+function glossHTML(list,title){
+  if(!list.length) return '';
+  return `<div class="sec"><h4>${title}</h4>`+
+    list.map(g=>{const kn=kanaOf(g.e);
+      return `<div class="gl"><b>${esc(g.e)}${kn?`<span class="kn">${esc(kn)}</span>`:''}</b>
+        <span>${esc(g.j)}</span></div>`}).join('')+`</div>`;
+}
+
+/* ---------------- helpers ---------------- */
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');
+  setTimeout(()=>t.classList.remove('on'),1600)}
+function ladderCounts(){
+  const c=[0,0,0,0,0,0];
+  for(const id in S.cards){ const x=S.cards[id]; c[Math.min(x.s,5)]++; }
+  return c;
+}
+function ladderHTML(){
+  const c=ladderCounts(), mx=Math.max(1,...c);
+  return `<div class="ladder">`+c.map((n,i)=>
+    `<div class="rung"><div class="rungn">${n}</div>
+      <div class="rungbar" style="height:${Math.round(6+ (n/mx)*44)}px"></div>
+      <div class="rungl">${STEPLABEL[i]}</div></div>`).join('')+`</div>`;
+}
+function totals(){
+  const seen=Object.keys(S.cards).length;
+  const mature=Object.values(S.cards).filter(x=>x.s>=4).length;
+  return {seen, mature, all:CARDS.length};
+}
+
+/* ---------------- views ---------------- */
+function vHome(){
+  const t=today(), L=S.log[t]||{a:0,o:0,new:0};
+  const warn = PERSIST==='none' ? `<div class="warn">この開き方では学習記録が残りません。
+    設定（≡）→「進捗のバックアップ」で書き出すか、使い方ガイドの開き方を試してください。</div>` : '';
+  const dw=dueList('w').length, dp=dueList('p').length;
+  const nn=newList('w',S.newPerDay).length;
+  const T=totals();
+  const donefull = L.new>=Math.min(S.newPerDay,nn+L.new) && dw===0 && L.a>0;
+  const fresh = T.seen===0 ? `
+  <div class="panel" style="border-color:var(--dr)">
+    <div class="eyebrow">以前の記録を移す</div>
+    <div style="font-size:14px;margin-bottom:8px">前の版で学習していた場合は、そちらを開いて
+      設定（≡）→「進捗のバックアップ」→「書き出す」でコピーした文字列を、ここに貼って復元してください。</div>
+    <textarea id="io2" placeholder="ET2|10|14|… で始まる文字列を貼り付け"></textarea>
+    <button class="big solid" data-imp2="1" style="width:100%;margin-top:8px;min-height:50px">復元する</button>
+  </div>` : '';
+  return `${warn}${fresh}${unsaved()?backupPanel(true):''}
+  ${ladderHTML()}
+  <div class="muted" style="text-align:center;margin-bottom:2px">
+    復習の階段 — 正解すると1段上がり、間違えると当日に戻ります</div>
+
+  <div class="panel">
+    <div class="row" style="justify-content:space-between">
+      <div><div class="eyebrow">今日</div>
+        <div style="font-size:15px"><b>${mins((L.sec||0)+(curBlock<BLOCKMIN?curBlock:0))}</b> 分 /
+          <b>${L.a}</b> 枚 / 正答 <b>${L.a?Math.round(L.o/L.a*100):0}%</b></div></div>
+      <div style="text-align:right"><div class="eyebrow">連続</div>
+        <div style="font-size:15px"><b>${S.streak}</b> 日</div></div>
+    </div>
+    <div class="meter" style="margin-top:10px"><i style="width:${Math.round(T.seen/T.all*100)}%"></i></div>
+    <div class="muted" style="margin-top:4px">着手 ${T.seen} / ${T.all} 枚　うち2週間以上定着 ${T.mature} 枚</div>
+  </div>
+
+  <button class="mode primary ${donefull?'done':''}" data-go="full">
+    <span class="pill">${nn+dw+2}枚</span><b>15分ルーティン</b>
+    <span>新出${S.newPerDay}語 5分 → 前日の復習 3分 → 英文問題 5分 → 間違えた語だけ 2分</span></button>
+  <button class="mode" data-go="ten"><span class="pill">${Math.min(10,nn)+Math.min(25,dw)+1}枚</span><b>10分コース</b>
+    <span>疲れた日はこちら。単語 → 英文1問 → 取りこぼし</span></button>
+  <button class="mode" data-go="one"><span class="pill">5枚</span><b>1分だけ</b>
+    <span>トイレ・歯磨き・エレベーター待ちに5枚だけ</span></button>
+  <button class="mode" data-go="rev"><span class="pill">${dw+dp}枚</span><b>復習だけ</b>
+    <span>新しい語は増やさず、期限が来たものだけ回す</span></button>
+  <button class="mode" data-go="prob"><span class="pill">4問</span><b>英文問題だけ</b>
+    <span>本試験と同じ選択式。空欄補充・理論○×・計算・組合せを、語句まで分解して解説</span></button>
+  <button class="mode" data-go="core"><span class="pill">16枚</span><b>レジュメの型</b>
+    <span>つながり10・対になる語33・重要動詞15・場面英文24・空欄補充24・計算演習をまとめて</span></button>
+
+  ${S.placement==null?`<button class="mode" data-go="place"><b>レベル判定テスト（10問）</b>
+    <span>まず現在地を10分で確認。1回だけでOK</span></button>`:
+   `<div class="panel"><div class="eyebrow">レベル判定テスト</div>
+    <div>${S.placement}0点 / 100点　<span class="muted">（合格ライン70点）</span></div>
+    <button class="chip dr" data-go="place" style="margin-top:8px">もう一度受ける</button></div>`}`;
+}
+
+function vSession(){
+  if(!ses || ses.pi>=ses.M.phases.length || !ses.queue.length) return vFinish();
+  const p = ses.M.phases[ses.pi], id = ses.queue[ses.i], c = BYID[id];
+  const left = p.sec ? (p.sec - (ses.phaseElapsed||0)) : null;
+  const phases = ses.M.phases.map((x,i)=>`<div class="ph ${i<ses.pi?'done':i===ses.pi?'on':''}"></div>`).join('');
+  const head = `<div class="phase">${phases}</div>
+    <div class="phlabel"><span>${esc(p.label)} — ${ses.i+1}/${ses.queue.length}</span>
+    <span>${left!==null?fmtLeft(left):('経過 '+mmss(ses.active||0))}</span></div>`;
+  return head + renderCard(c);
+}
+
+function chips(c){
+  const u = (UNITS.find(u=>u[0]===c.u)||[0,''])[1];
+  return `<div><span class="chip dr">${esc(c.tp||'')}</span>${u?`<span class="chip">${esc(u)}</span>`:''}
+    ${c.ch?`<span class="chip">${esc(c.ch)}</span>`:''}${c.sb?`<span class="chip">${esc(c.sb)}</span>`:''}</div>`;
+}
+
+function renderCard(c){
+  const shown = ses.shown;
+  let body='';
+  if(c.t==='w'){
+    body = `<div class="front en">${esc(c.e)}</div>
+      ${c.k?`<div class="kana">${esc(c.k)}</div>`:''}` +
+      (shown?`<div class="hr"></div><div class="ansjp">${esc(c.j)}</div>
+        ${c.sy?`<div class="muted">＝ ${esc(c.sy)}</div>`:''}`:'');
+  } else if(c.t==='pr'){
+    body = `<div class="muted">意味は？（対になる語もセットで）</div>
+      <div class="front en">${esc(c.e)}</div>
+      ${c.k?`<div class="kana">${esc(c.k)}</div>`:''}` +
+      (shown?`<div class="hr"></div><div class="ansjp">${esc(c.j)}</div>
+        <div class="sec"><h4>対になる語</h4>
+          <div class="gl"><b>${esc(c.e2)}${c.k2?`<span class="kn">${esc(c.k2)}</span>`:''}</b>
+            <span>${esc(c.j2)}</span></div></div>`:'');
+  } else if(c.t==='vb'){
+    body = `<div class="muted">この語の「型」は？</div><div class="front en">${esc(c.e)}</div>
+      ${c.k?`<div class="kana">${esc(c.k)}</div>`:''}` +
+      (shown?`<div class="hr"></div><div class="ansjp" style="font-size:19px">${esc(c.j)}</div>
+        ${(c.co3||[]).map(x=>`<div class="gl"><b>${esc(x[0])}${x[2]?`<span class="kn">${esc(x[2])}</span>`:''}</b>
+          <span>${esc(x[1])}</span></div>`).join('')}
+        <div class="hr"></div><div class="en" style="font-size:15px">${esc(c.ex)}</div>
+        <div class="muted">${esc(c.exj)}</div>
+        <div class="exp" style="margin-top:8px">${esc(c.x)}</div>`:'');
+  } else if(c.t==='ch'){
+    body = `<div class="muted">${esc(c.ti)} の処理の流れ。日本語で言うと？</div>
+      <div class="front small en" style="line-height:1.8">${esc(c.e)}</div>
+      ${c.k?`<div class="kana" style="line-height:1.7">${esc(c.k)}</div>`:''}` +
+      (shown?`<div class="hr"></div>
+        <div style="font-size:17px;font-weight:600;line-height:1.8;color:var(--dr)">${esc(c.j)}</div>`:'');
+  } else if(c.t==='gr'){
+    body = `<div class="muted">${esc(c.ti)}</div><div class="front small en">${esc(c.e)}</div>` +
+      (shown?`<div class="hr"></div><div class="ansjp" style="font-size:17px">${esc(c.j)}</div>
+        <div class="exp">${esc(c.x)}</div>`:'');
+  } else if(c.t==='sc'){
+    const M=markHTML(c.e);
+    body = `<div class="muted">場面で複数語をまとめて復習 — ${esc(c.ti)}</div>
+      <div class="front small en">${M.html}</div>` +
+      (shown?`<div class="hr"></div><div style="font-size:15px">${esc(c.j)}</div>
+        <div class="sec"><h4>復習語彙</h4>${voHTML(c.vo)}</div>
+        ${notesHTML(M.notes)}`
+      : (ses.hint?`<div class="hr"></div><div class="sec"><h4>この場面の語</h4>${voHTML(c.vo)}</div>`
+         : `<button class="hintbtn" data-hint="1">語句のヒントを見る</button>`));
+  } else if(c.t==='tf'){
+    const M=markHTML(c.e), G=glossary(c.e);
+    body = `<div class="muted">日本基準の会計処理として正しいか？</div>
+      <div class="front small en">${M.html}</div>` +
+      (shown?`<div class="hr"></div>
+        <div class="ox ${c.a==='O'?'o':'x'}">${c.a==='O'?'○ 正しい':'✕ 誤り'}</div>
+        <div style="font-size:15px;margin-top:6px">${esc(c.j)}</div>
+        ${c.x?`<div class="sec"><h4>判定の決め手</h4><div class="exp">${esc(c.x)}</div></div>`:''}
+        ${notesHTML(M.notes)}
+        ${glossHTML(G,'この英文で押さえる語')}
+        <div class="legend"><span class="mk-vb">青線</span>＝会計処理を決める動詞　
+          <span class="mk-wd">朱線</span>＝結論を変える語　
+          <span class="mk-num">網</span>＝金額・数量　<span class="mk-date">枠</span>＝日付</div>
+        ${c.rf?`<div class="muted" style="margin-top:6px">${esc(c.rf)}</div>`:''}`
+      : (ses.hint?`<div class="hr"></div>${glossHTML(G,'この英文で押さえる語')}
+          <div class="muted" style="font-size:12px;margin-top:8px">語の意味だけ確認して、もう一度英文を読んでから答えてください。</div>`
+        : `<button class="hintbtn" data-hint="1">語句のヒントを見る</button>`));
+  } else if(c.t==='cz'){
+    const M=markHTML(c.e);
+    body = `<div class="muted">空欄に入る語は？ — ${esc(c.ti)}</div>
+      <div class="front small en">${M.html.replace('(  A  )','<b style="color:var(--cr)">(&nbsp;&nbsp;A&nbsp;&nbsp;)</b>')}</div>` +
+      (shown?`<div class="hr"></div>
+        <div class="sec"><h4>判断の根拠</h4><div class="exp">${esc(c.x)}</div></div>
+        <div class="sec"><h4>全文の意味</h4><div style="font-size:14px">${esc(c.j)}</div></div>
+        <div class="sec"><h4>この場面の語</h4>${voHTML(c.vo)}</div>
+        ${notesHTML(M.notes)}`
+      : (ses.hint?`<div class="hr"></div><div class="sec"><h4>この場面の語</h4>${voHTML(c.vo)}</div>`
+         : `<button class="hintbtn" data-hint="1">語句のヒントを見る</button>`));
+  } else if(c.t==='rd'||c.t==='cl'){
+    const M=markHTML(c.e), G=glossary(c.e);
+    body = `${c.ti?`<div class="muted">${esc(c.ti)}</div>`:''}
+      <div class="front small en">${M.html}</div>${c.q?`<div style="margin-top:8px">${esc(c.q)}</div>`:''}` +
+      (shown?`<div class="hr"></div>
+        <div class="sec"><h4>解説</h4><div class="exp">${esc(c.x)}</div></div>
+        ${c.vo?`<div class="sec"><h4>英語は、特にこの語を押さえればよい</h4>${voHTML(c.vo)}</div>`
+          :glossHTML(G,'この英文で押さえる語')}
+        ${notesHTML(M.notes)}
+        <div class="legend"><span class="mk-num">網</span>＝金額・数量　<span class="mk-date">枠</span>＝日付　
+          <span class="mk-vb">青線</span>＝処理を決める動詞　<span class="mk-wd">朱線</span>＝結論を変える語</div>`
+      : `<div class="sec"><h4>解く手順</h4><div class="step5">${DATA.s5.map(t=>esc(t)).join('<br>')}</div></div>
+         ${ses.hint?glossHTML(G,'この英文で押さえる語'):`<button class="hintbtn" data-hint="1">語句のヒントを見る</button>`}`);
+  } else if(c.t==='cb'){
+    body = `<div class="muted">${esc(c.ti)}</div><div style="font-size:14px" class="en">${esc(c.e)}</div>
+      <div class="hr"></div>` +
+      c.it.map(it=>{const M=markHTML(it[1]);
+        return `<div style="margin-bottom:11px"><b class="en">${it[0]}.</b>
+        <span class="en" style="font-size:14px">${M.html}</span>
+        ${shown?`<div class="muted" style="margin-top:3px">${esc(it[2])}</div>
+        <div style="font-size:13px;color:${it[3]==='O'?'var(--moss)':'var(--cr)'}">
+        ${it[3]==='O'?'○':'✕'} ${esc(it[4])}</div>
+        ${notesHTML(M.notes)}`:''}</div>`}).join('');
+  }
+  let chos='';
+  if(c.ch2){
+    chos = `<div style="margin-top:12px">` + c.ch2.map((t,i)=>{
+      let cls='choice';
+      if(ses.pick===i) cls+=' pick';
+      if(shown){ if(i===c.a) cls+=' right'; else if(ses.pick===i) cls+=' wrong'; }
+      return `<button class="${cls}" data-pick="${i}"><span class="en">${esc(t)}</span></button>`;
+    }).join('')+`</div>`;
+  }
+  return `<div class="qcard">${chips(c)}${body}</div>${chos}`;
+}
+
+function bar(){
+  if(view==='ses' && ses && ses.pi<ses.M.phases.length && ses.queue.length){
+    const c = BYID[ses.queue[ses.i]];
+    if(!ses.shown){
+      if(c.t==='tf'){
+        return `<button class="big ok" data-tf="O">○ 正しい</button>
+                <button class="big ng" data-tf="X">✕ 誤り</button>`;
+      }
+      if(c.ch2){
+        return `<button class="big solid" data-show="1" ${ses.pick===null?'disabled style="opacity:.4"':''}>
+          答え合わせ</button>`;
+      }
+      return `<button class="big solid" data-show="1">答えを見る<small>まず1秒で思い出す</small></button>`;
+    }
+    if(ses.graded){
+      const nx = STEPLABEL[Math.min((st(c.id)||{s:0}).s,5)];
+      return `<button class="big mid" data-re="1">自信なかった<small>短い間隔に戻す</small></button>
+              <button class="big solid" data-next="1">次へ<small>${nx}に再登場</small></button>`;
+    }
+    return `<button class="big ng" data-g="0">✕<small>出なかった</small></button>
+            <button class="big mid" data-g="1">△<small>迷った</small></button>
+            <button class="big ok" data-g="2">○<small>1秒で出た</small></button>`;
+  }
+  if(view==='place' && plc){
+    if(plc.pick===null) return '';
+    if(!plc.shown) return `<button class="big solid" data-pshow="1">答え合わせ</button>`;
+    return `<button class="big solid" data-pnext="1">次へ</button>`;
+  }
+  return '';
+}
+
+function vFinish(){
+  const min = Math.max(1, Math.round((ses.active||0)/60));
+  const T=totals(), dw=dueList('w').length;
+  return `${ladderHTML()}
+  <div class="panel" style="text-align:center">
+    <div class="eyebrow">${esc(ses.M.name)} 完了</div>
+    <div style="font-size:34px;font-weight:700">${ses.done}<span style="font-size:16px">枚</span></div>
+    <div class="muted">正答 ${ses.done?Math.round(ses.right/ses.done*100):0}%　実学習 ${mmss(ses.active||0)}
+      <span style="font-size:11px">（画面を離れていた時間は除く）</span></div>
+    ${ses.miss.length?`<div class="hr"></div><div style="font-size:14px">今日つまずいた ${ses.miss.length} 枚は、
+      <b>明日</b>もう一度出ます。</div>`:`<div class="hr"></div><div style="font-size:14px">取りこぼしゼロ。</div>`}
+  </div>
+  ${backupPanel(true)}
+  ${dw?`<button class="mode" data-go="rev"><span class="pill">${dw}枚</span><b>まだ復習が残っています</b>
+    <span>時間があれば続けて回す</span></button>`:''}
+  <button class="mode" data-go="home"><b>ホームに戻る</b><span>連続 ${S.streak} 日</span></button>
+`;
+}
+
+/* ---------------- dashboard ---------------- */
+function vDash(){
+  const T=totals(), t=today();
+  /* 論点別 */
+  const tp={};
+  CARDS.forEach(c=>{ const k=c.tp||'その他'; (tp[k]=tp[k]||{a:0,s:0,m:0}); tp[k].a++;
+    const x=S.cards[c.id]; if(x){tp[k].s++; if(x.s>=3) tp[k].m++;} });
+  const keys = Object.keys(tp).sort((a,b)=>{
+    const pa=PRI.indexOf(a), pb=PRI.indexOf(b);
+    return (pa<0?99:pa)-(pb<0?99:pb) || tp[b].a-tp[a].a; });
+  /* 今後7日 */
+  const fc=[0,0,0,0,0,0,0];
+  for(const id in S.cards){ const d=daysBetween(t, S.cards[id].d); if(d<=0)fc[0]++; else if(d<7)fc[d]++; }
+  const fmax=Math.max(1,...fc);
+  /* 直近14日 */
+  const days=[]; for(let i=13;i>=0;i--) days.push(addDays(t,-i));
+  const amax=Math.max(1,...days.map(d=>(S.log[d]||{a:0}).a));
+  /* 苦手 */
+  const weak = Object.entries(S.cards).filter(([id,x])=>x.ng>0)
+    .sort((a,b)=>b[1].ng-a[1].ng || a[1].s-b[1].s).slice(0,10);
+  return `${ladderHTML()}
+  <div class="panel"><div class="stat">
+    <div><b>${S.streak}</b><span>連続日数</span></div>
+    <div><b>${T.seen}</b><span>着手した枚数</span></div>
+    <div><b>${T.mature}</b><span>2週間以上定着</span></div>
+  </div></div>
+
+  <div class="panel"><div class="eyebrow">論点別の定着</div>
+    ${keys.map(k=>`<div class="tline"><span>${esc(k)}${PRI.includes(k)?' <span class="chip dr" style="padding:0 6px">重点</span>':''}</span>
+      <b>${tp[k].m}/${tp[k].a}</b></div>
+      <div class="meter"><i style="width:${Math.round(tp[k].m/tp[k].a*100)}%"></i></div>`).join('')}
+    <div class="muted" style="margin-top:10px">1週間以上の間隔まで上がったカードを「定着」として数えています。</div>
+  </div>
+
+  <div class="panel"><div class="eyebrow">今後7日の復習予定</div>
+    <div class="wk">${fc.map((n,i)=>`<div><i style="height:${Math.round(4+n/fmax*44)}px"></i>
+      ${i===0?'今日':'+'+i}</div>`).join('')}</div>
+    <div class="muted" style="margin-top:8px">山が高い日は「復習だけ」モードで先に崩しておくと楽です。</div>
+  </div>
+
+  <div class="panel"><div class="eyebrow">直近14日の学習量（枚）</div>
+    <div class="spark">${days.map(d=>{const a=(S.log[d]||{a:0}).a;
+      return `<div style="height:${Math.round(2+a/amax*44)}px;opacity:${a?0.85:0.15}"></div>`}).join('')}</div>
+    <div class="muted" style="margin-top:6px">${days.filter(d=>S.log[d]).length}/14 日</div>
+  </div>
+  ${timePanel(days)}
+
+  <div class="panel"><div class="eyebrow">つまずいた回数が多いカード</div>
+    ${weak.length?`<ul class="list">${weak.map(([id,x])=>{const c=BYID[id];
+      return `<li><span>${esc((c.e||'').slice(0,42))}</span><em>${x.ng}回</em></li>`}).join('')}</ul>`
+      :`<div class="muted">まだありません。</div>`}
+  </div>`;
+}
+
+/* ---------- 学習時間の集計 ---------- */
+function timePanel(days){
+  const t=today();
+  const sec=d=>(S.log[d]||{}).sec||0;
+  const todaySec=sec(t)+(curBlock>=BLOCKMIN?0:curBlock);
+  const wk=days.slice(-7).reduce((a,d)=>a+sec(d),0);
+  const used=days.filter(d=>sec(d)>0);
+  const avg=used.length?Math.round(days.reduce((a,d)=>a+sec(d),0)/used.length):0;
+  const tb=blocksOf(t);
+  const allB=[]; days.forEach(d=>blocksOf(d).forEach(b=>allB.push(b)));
+  const avgB=allB.length?Math.round(allB.reduce((a,b)=>a+b[1],0)/allB.length):0;
+  const smax=Math.max(1,...days.map(sec));
+  /* 時間帯別（直近14日の合計） */
+  const hrs=new Array(24).fill(0);
+  allB.forEach(b=>{ hrs[Math.min(23,Math.floor(b[0]/60))]+=b[1]; });
+  const hmax=Math.max(1,...hrs);
+  return `
+  <div class="panel"><div class="eyebrow">学習時間</div>
+    <div class="stat">
+      <div><b>${mins(todaySec)}</b><span>今日（分）</span></div>
+      <div><b>${mins(wk)}</b><span>直近7日（分）</span></div>
+      <div><b>${mins(avg)}</b><span>学習した日の平均</span></div>
+    </div>
+    <div class="hr"></div>
+    <div class="spark">${days.map(d=>{const v=sec(d);
+      return `<div style="height:${Math.round(2+v/smax*44)}px;opacity:${v?0.85:0.15};background:var(--moss)"></div>`}).join('')}</div>
+    <div class="muted" style="margin-top:6px">直近14日の1日あたりの分数。画面を離れていた時間は除いています。</div>
+  </div>
+
+  <div class="panel"><div class="eyebrow">今日のすきま</div>
+    ${tb.length?`
+      <div class="tl">${tb.map(b=>`<i style="left:${(b[0]/1440*100).toFixed(2)}%;
+        width:${Math.max(1.2,b[1]/1440/60*100).toFixed(2)}%"></i>`).join('')}
+        ${[0,6,12,18].map(h=>`<u style="left:${(h/24*100)}%">${h}</u>`).join('')}</div>
+      <ul class="list" style="margin-top:12px">${tb.map(b=>
+        `<li><span>${hhmm(b[0])} 〜</span><b>${b[1]>=60?Math.round(b[1]/60)+'分':b[1]+'秒'}</b></li>`).join('')}</ul>
+      <div class="muted" style="margin-top:8px">今日は <b>${tb.length}回</b> のすきまで
+        合計 <b>${mins(todaySec)}分</b>。1回あたり平均 ${Math.round(todaySec/tb.length/60*10)/10}分。</div>`
+    :`<div class="muted">今日はまだ記録がありません。20秒以上続けて学習すると1回として数えます。</div>`}
+  </div>
+
+  <div class="panel"><div class="eyebrow">すきまが生まれる時間帯（直近14日）</div>
+    <div class="wk" style="height:64px">${hrs.map((v,h)=>`<div>
+      <i style="height:${Math.round(2+v/hmax*46)}px;background:var(--dr)"></i>
+      ${h%6===0?h:''}</div>`).join('')}</div>
+    <div class="muted" style="margin-top:8px">${allB.length?
+      `14日間で <b>${allB.length}回</b>、1回あたり平均 <b>${Math.round(avgB/60*10)/10}分</b>。
+       山が立っている時間帯が、あなたの実際に使えるすきまです。`
+      :'記録が貯まると、どの時間帯にすきまがあるかが見えてきます。'}</div>
+  </div>`;
+}
+
+/* ---------------- more ---------------- */
+let q='', ioText='';
+function searchHTML(){
+  const k=q.trim().toLowerCase();
+  if(!k) return '';
+  const res=CARDS.filter(c=>((c.e||'')+(c.j||'')+(c.sy||'')+(c.k||'')).toLowerCase()
+    .includes(k)).slice(0,40);
+  if(!res.length) return '<div class="muted">見つかりませんでした。</div>';
+  return res.map(c=>`<div style="padding:8px 0;border-bottom:1px solid var(--line)">
+    <div class="en" style="font-size:15px">${esc(c.e)}</div>
+    ${c.k?`<div class="kana">${esc(c.k)}</div>`:''}
+    <div class="muted">${esc(c.j||'')}${c.sy?'　＝ '+esc(c.sy):''}</div></div>`).join('');
+}
+function vMore(){
+  return `
+  <div class="panel"><div class="eyebrow">1日に増やす新出語</div>
+    <div class="seg">${[5,10,15,20].map(n=>`<button class="${S.newPerDay===n?'on':''}" data-np="${n}">${n}語</button>`).join('')}</div>
+    <div class="muted" style="margin-top:8px">まとまった時間が取れない前提なら10語が目安。増やすほど後日の復習が増えます。</div>
+  </div>
+  <div class="panel"><div class="eyebrow">どこまで進めるか（ステージ）</div>
+    <select id="umax">${UNITS.map(u=>`<option value="${u[0]}" ${S.unitMax===u[0]?'selected':''}>
+      ${u[0]}. ${esc(u[1])} まで</option>`).join('')}</select>
+    <div class="muted" style="margin-top:8px">レジュメの重点論点（有価証券〜外貨換算）はステージ4〜10です。
+      監査・管理は後半に置いています。</div>
+  </div>
+  <div class="panel"><div class="eyebrow">用語をひく</div>
+    <input type="search" id="q" placeholder="英語でも日本語でもカタカナでも" value="${esc(q)}">
+    <div id="qres">${searchHTML()}</div>
+  </div>
+  <div class="panel"><div class="eyebrow">英文問題を解く5ステップ</div>
+    ${DATA.s5.map(s=>`<div style="font-size:14px;padding:3px 0">${esc(s)}</div>`).join('')}
+  </div>
+  ${backupPanel(false)}
+  <div class="panel"><div class="eyebrow">保存の状態</div>
+    <div class="muted">いまの保存先：<b>${PERSIST_LABEL[PERSIST]}</b>／学習済み ${Object.keys(S.cards).length}枚<br>
+      最後に控えを取ったのは ${S.bak?new Date(S.bak).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'まだありません'}<br>
+      「Claudeアプリ内に保存」以外と表示されている場合、アプリを終了すると記録が消えることがあります。
+      学習のあとは必ず上の「コピー」か「ファイルに保存」で控えを取ってください。</div>
+  </div>
+  <div class="panel">
+    <label class="opt"><span>ダークモード</span>
+      <button class="chip dr" data-th="1">${S.theme==='dark'?'オン':'オフ'}</button></label>
+    <label class="opt"><span>学習記録を消す</span>
+      <button class="chip" data-reset="1" style="color:var(--cr);border-color:var(--cr)">リセット</button></label>
+    <div class="muted" style="margin-top:8px">出典：2027年夏期英語対策レジュメ／夏期講習スライド／用語集／問題集／重点出題分野・網掛け外論点。
+      収録は英語による重点出題分野に絞っています。</div>
+  </div>`;
+}
+
+/* ---------------- placement ---------------- */
+let plc=null;
+function vPlace(){
+  if(!plc) plc={i:0, pick:null, shown:false, right:0};
+  if(plc.i>=DATA.pl.length){
+    const sc=plc.right*10;
+    return `<div class="panel" style="text-align:center">
+      <div class="eyebrow">レベル判定テスト</div>
+      <div style="font-size:40px;font-weight:700">${sc}<span style="font-size:16px">点</span></div>
+      <div class="muted">合格ライン70点</div><div class="hr"></div>
+      <div style="font-size:14px;text-align:left">${sc>=70
+        ? '文法の土台はあります。用語とフレーズの高速化に時間を割いてください。ステージ1〜3は「1分だけ」で流し、4以降を厚めに。'
+        : '単語だけでなく文の型（受動態・助動詞・関係詞）で失点しています。ステージ11「問題文のフレーズと文法」を早めに前倒しし、基本英文法テキストも併用してください。'}</div>
+    </div><button class="mode" data-go="home"><b>ホームに戻る</b></button>`;
+  }
+  const q=DATA.pl[plc.i];
+  return `<div class="phlabel"><span>レベル判定テスト</span><span>${plc.i+1}/${DATA.pl.length}</span></div>
+  <div class="qcard"><div class="front small">${esc(q.q)}</div></div>
+  <div style="margin-top:12px">${q.choices.map((t,i)=>{
+    let cls='choice'; if(plc.pick===i)cls+=' pick';
+    if(plc.shown){ if(i===q.answer)cls+=' right'; else if(plc.pick===i)cls+=' wrong'; }
+    return `<button class="${cls}" data-ppick="${i}"><span class="en">${esc(t)}</span></button>`}).join('')}</div>
+  ${plc.shown?`<div class="panel"><div class="exp">${esc(q.expl)}</div></div>`:''}`;
+}
+
+/* ---------------- render ---------------- */
+function render(){
+  document.documentElement.setAttribute('data-scheme', S.theme==='dark'?'dark':'light');
+  const app=document.getElementById('app');
+  app.innerHTML = view==='home'?vHome() : view==='ses'?vSession() : view==='fin'?vFinish()
+    : view==='dash'?vDash() : view==='more'?vMore() : view==='place'?vPlace() : vHome();
+  const b=bar(), bw=document.getElementById('bar');
+  document.getElementById('barin').innerHTML=b;
+  bw.style.display = b? 'block':'none';
+  const sub={home:'令和9年短答・英語対策',ses:ses?ses.M.name:'',fin:'おつかれさまでした',
+    dash:'学習状況',more:'設定と用語検索',place:'レベル判定テスト'}[view]||'';
+  document.getElementById('hsub').textContent=sub;
+  window.scrollTo(0,0);
+}
+
+document.addEventListener('click', e=>{
+  const t=e.target.closest('[data-go],[data-show],[data-g],[data-tf],[data-pick],[data-np],[data-th],[data-reset],[data-ppick],[data-pnext],[data-next],[data-re],[data-exp],[data-imp],[data-imp2],[data-hint],[data-copyp],[data-savep]');
+  if(!t) return;
+  const d=t.dataset;
+  if(d.go){
+    if(d.go==='home'){view='home';}
+    else if(d.go==='more'){view='more';}
+    else if(d.go==='place'){plc=null;view='place';}
+    else startSession(d.go);
+    return render();
+  }
+  if(d.show){ ses.shown=true; return render(); }
+  if(d.hint){ ses.hint=true; return render(); }
+  if(d.tf){ const c=BYID[ses.queue[ses.i]]; ses.shown=true; ses.pick=d.tf;
+    if(d.tf!==c.a){ grade(c.id,0); ses.done++;
+      const p=ses.M.phases[ses.pi];
+      if(p.k!=='miss' && !ses.miss.includes(c.id)) ses.miss.push(c.id);
+      ses.tfwrong=true; } else { ses.tfwrong=false; }
+    return render(); }
+  if(d.g!==undefined){
+    const c=BYID[ses.queue[ses.i]];
+    if(c.t==='tf' && ses.pick && ses.pick!==c.a){ /* 既に✕で採点済み */
+      ses.shown=false; ses.pick=null; ses.graded=false; ses.hint=false; ses.i++;
+      if(ses.i>=ses.queue.length){ ses.pi++; loadPhase(); }
+      if(ses.pi>=ses.M.phases.length) view='fin';
+      return render();
+    }
+    return answer(Number(d.g));
+  }
+  if(d.pick!==undefined){
+    if(ses.shown) return;
+    const c=BYID[ses.queue[ses.i]]; ses.pick=Number(d.pick); ses.shown=true;
+    if(ses.pick!==c.a){ grade(c.id,0); ses.done++;
+      const p=ses.M.phases[ses.pi];
+      if(p.k!=='miss' && !ses.miss.includes(c.id)) ses.miss.push(c.id); }
+    return render();
+  }
+  if(d.copyp){ copyProgress(); return render(); }
+  if(d.savep){ downloadProgress(); return render(); }
+  if(d.exp){ ioText = exportStr(); render();
+    const n=document.getElementById('io'); if(n){ n.focus(); n.select(); }
+    try{ if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(ioText).then(()=>toast('コピーしました'),()=>toast('全選択してコピーしてください'));
+      return; } }catch(e){}
+    toast('全選択してコピーしてください'); return; }
+  if(d.imp2){ const n=document.getElementById('io2');
+    if(!n||!n.value.trim()) return toast('文字列を貼り付けてください');
+    if(!importStr(n.value.trim())) return toast('内容が読み取れませんでした');
+    save(); toast('復元しました'); return render(); }
+  if(d.imp){ const n=document.getElementById('io'); if(!n||!n.value.trim()) return toast('復元する内容を貼り付けてください');
+    if(!importStr(n.value.trim())) return toast('内容が読み取れませんでした');
+    ioText=''; save(); toast('復元しました'); view='home'; return render(); }
+  if(d.np){ S.newPerDay=Number(d.np); save(); return render(); }
+  if(d.th){ S.theme = S.theme==='dark'?'light':'dark'; save(); return render(); }
+  if(d.reset){ if(confirm('学習記録をすべて消します。よろしいですか？')){
+      S=blank(); S.order=buildOrder(); save(); view='home'; return render(); } return; }
+  if(d.ppick!==undefined){ if(plc.shown) return; plc.pick=Number(d.ppick); plc.shown=true;
+    if(plc.pick===DATA.pl[plc.i].answer) plc.right++; return render(); }
+  if(d.pnext){ plc.i++; plc.pick=null; plc.shown=false;
+    if(plc.i>=DATA.pl.length){ S.placement=plc.right; save(); } return render(); }
+});
+document.addEventListener('input', e=>{
+  if(e.target.id==='q'){ q=e.target.value;
+    const r=document.getElementById('qres'); if(r) r.innerHTML=searchHTML(); }
+});
+document.addEventListener('change', e=>{
+  if(e.target.id==='umax'){ S.unitMax=Number(e.target.value); save(); render(); }
+});
+document.getElementById('navHome').onclick=()=>{view='home';render()};
+document.getElementById('navDash').onclick=()=>{view='dash';render()};
+document.getElementById('navMore').onclick=()=>{view='more';render()};
+
+setInterval(tick,1000);
+['pointerdown','keydown','touchstart','scroll'].forEach(ev=>
+  document.addEventListener(ev,()=>{lastAct=Date.now()},{passive:true}));
+document.addEventListener('visibilitychange',()=>{
+  if(!isVisible()){ closeBlock(); saveNow(); } else { lastTick=Date.now(); lastAct=Date.now(); }
+});
+window.addEventListener('pagehide',()=>{ closeBlock(); saveNow(); });
+window.addEventListener('beforeunload',()=>{ closeBlock(); saveNow(); });
+
+function vLoader(msg){
+  return `<div class="panel" style="margin-top:24px">
+    <div class="eyebrow">最初に一度だけ</div>
+    <h2>学習データを読み込む</h2>
+    <div style="font-size:14px;line-height:1.8">このアプリには教材が入っていません。
+      配布された <b>cards.json</b> を選ぶと、この端末の中だけに保存されて使えるようになります。
+      次回からは自動で開きます。</div>
+    ${msg?`<div class="warn" style="margin-top:10px">${esc(msg)}</div>`:''}
+    <label class="big solid" style="display:grid;place-items:center;margin-top:14px;cursor:pointer">
+      cards.json を選ぶ
+      <input type="file" id="dfile" accept=".json,application/json" style="display:none">
+    </label>
+  </div>`;
+}
+function showLoader(msg){
+  document.getElementById('app').innerHTML=vLoader(msg);
+  document.getElementById('bar').style.display='none';
+  document.getElementById('hsub').textContent='セットアップ';
+}
+async function useData(d){
+  if(!d || !Array.isArray(d.c) || !d.c.length) throw new Error('bad');
+  initData(d);
+  await load();
+  render();
+}
+document.addEventListener('change', async e=>{
+  if(e.target.id==='pfile'){
+    const f=e.target.files && e.target.files[0]; if(!f) return;
+    try{ const t=await f.text();
+      if(importStr(t.trim())){ save(); toast('復元しました'); view='home'; render(); }
+      else toast('この内容は読み取れませんでした');
+    }catch(err){ toast('読み込めませんでした'); }
+    return;
+  }
+  if(e.target.id!=='dfile') return;
+  const f=e.target.files && e.target.files[0];
+  if(!f) return;
+  showLoader('読み込んでいます…');
+  try{
+    const txt=await f.text();
+    const d=JSON.parse(txt);
+    if(!d || !Array.isArray(d.c)) throw new Error('bad');
+    try{ localStorage.setItem(DKEY, txt); }catch(err){}
+    await useData(d);
+  }catch(err){ showLoader('このファイルは読み込めませんでした。cards.json を選んでください。'); }
+});
+(async function boot(){
+  if(EMBEDDED){ try{ await useData(EMBEDDED); return; }catch(e){} }
+  let raw=null;
+  try{ raw=localStorage.getItem(DKEY); }catch(e){}
+  if(raw){ try{ await useData(JSON.parse(raw)); return; }catch(e){} }
+  showLoader('');
+})();
+</script>
+</body>
+</html>
