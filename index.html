@@ -327,6 +327,7 @@ function dueList(pool){
 }
 function newList(pool, n){
   const out=[];
+  if(!(n>0)) return out;
   for(const id of S.order[pool]){
     if(S.cards[id]) continue;
     if(BYID[id].u > S.unitMax) continue;
@@ -334,6 +335,24 @@ function newList(pool, n){
   }
   return out;
 }
+/* その日にどこまで進んだかを数える。中断して開き直しても続きから始められる */
+function todayLog2(){ return S.log[today()] || {a:0,o:0,m:0,new:0}; }
+/* 新出は「単語プール」だけで数える（英文問題は別枠） */
+function newToday(){ const L=todayLog2(); return (L.nw!=null? L.nw : (L.new||0)); }
+function remainNew(cap){ return Math.max(0, (cap==null?S.newPerDay:cap) - newToday()); }
+function seenTodayIds(){
+  const t=today(), out=[];
+  for(const id in S.cards) if(S.cards[id].seen===t) out.push(Number(id));
+  return out;
+}
+function probToday(){ return seenTodayIds().filter(id=>PROBT.includes(BYID[id].t)).length; }
+/* 今日つまずいて当日に戻ったカード＝「間違えた語だけ」の対象 */
+function missToday(){
+  const t=today(), out=[];
+  for(const id in S.cards){ const x=S.cards[id]; if(x.seen===t && x.s===0) out.push(Number(id)); }
+  return out;
+}
+
 function grade(id, g){          /* g: 0=✕ 1=△ 2=◯ */
   const t=today();
   let x = S.cards[id];
@@ -346,7 +365,7 @@ function grade(id, g){          /* g: 0=✕ 1=△ 2=◯ */
   x.d = iv===0 ? t : addDays(t, iv);
   const L = S.log[t] || (S.log[t]={a:0,o:0,m:0,new:0});
   L.a++; if(g===2)L.o++; if(g===0)L.m++;
-  if(x.n===1) L.new++;
+  if(x.n===1){ L.new++; if(WORDT.includes(BYID[id].t)) L.nw=(L.nw||0)+1; }
   if(S.last!==t){ S.streak = (S.last && daysBetween(S.last,t)===1) ? S.streak+1 : 1; S.last=t; }
   save();
 }
@@ -492,20 +511,22 @@ function backupPanel(big){
 /* ---------------- session ---------------- */
 const MODES = {
   full:{name:'15分ルーティン', phases:[
-    {k:'new',  label:'新出10語',    sec:300, get:()=>newList('w', S.newPerDay)},
+    {k:'new',  label:'新出語',      sec:300, get:()=>newList('w', remainNew())},
     {k:'due',  label:'前日までの復習', sec:180, get:()=>dueList('w').slice(0,40)},
-    {k:'prob', label:'英文問題',     sec:300, get:()=>probPick(2)},
-    {k:'miss', label:'間違えた語だけ', sec:120, get:()=>[]}]},
+    {k:'prob', label:'英文問題',     sec:300, get:()=>probPick(Math.max(0, 2-probToday()))},
+    {k:'miss', label:'間違えた語だけ', sec:120, get:()=>missToday()}]},
   ten:{name:'10分コース', phases:[
-    {k:'new',  label:'新出語',   sec:180, get:()=>newList('w', Math.min(10,S.newPerDay))},
+    {k:'new',  label:'新出語',   sec:180, get:()=>newList('w', remainNew(Math.min(10,S.newPerDay)))},
     {k:'due',  label:'復習',     sec:120, get:()=>dueList('w').slice(0,25)},
-    {k:'prob', label:'英文問題1問',sec:240, get:()=>probPick(1)},
-    {k:'miss', label:'取りこぼし',sec:60,  get:()=>[]}]},
+    {k:'prob', label:'英文問題1問',sec:240, get:()=>probPick(Math.max(0, 1-probToday()))},
+    {k:'miss', label:'取りこぼし',sec:60,  get:()=>missToday()}]},
   one:{name:'1分だけ', phases:[
-    {k:'due',  label:'5枚だけ', sec:90, get:()=>{const d=dueList('w'); return d.length?d.slice(0,5):newList('w',5);}}]},
+    {k:'due',  label:'5枚だけ', sec:90, get:()=>{
+      const d=dueList('w'); if(d.length) return d.slice(0,5);
+      return newList('w', Math.min(5, remainNew()));}}]},
   rev:{name:'復習だけ', phases:[
     {k:'due',  label:'期限が来たカード', sec:0, get:()=>dueList('w').concat(dueList('p'))},
-    {k:'miss', label:'間違えた分', sec:0, get:()=>[]}]},
+    {k:'miss', label:'間違えた分', sec:0, get:()=>missToday()}]},
   core:{name:'レジュメの型', phases:[
     {k:'new',  label:'つながり・対になる語・重要動詞', sec:0,
      get:()=>pickBy('w', c=>c.t==='ch'||c.t==='pr'||c.t==='vb', 12)},
@@ -513,10 +534,10 @@ const MODES = {
      get:()=>pickBy('p', c=>c.t==='sc', 3)},
     {k:'prob2',label:'空欄補充・計算・組合せ問題', sec:0,
      get:()=>pickBy('p', c=>c.t==='cz'||c.t==='cl'||c.t==='cb', 2)},
-    {k:'miss', label:'間違えた分', sec:0, get:()=>[]}]},
+    {k:'miss', label:'間違えた分', sec:0, get:()=>missToday()}]},
   prob:{name:'英文問題だけ', phases:[
     {k:'prob', label:'英文問題', sec:0, get:()=>probPick(4)},
-    {k:'miss', label:'間違えた分', sec:0, get:()=>[]}]}
+    {k:'miss', label:'間違えた分', sec:0, get:()=>missToday()}]}
 };
 function probPick(n){
   const d = dueList('p'); const out = d.slice(0,n);
@@ -530,13 +551,17 @@ function startSession(mode){
          t0:Date.now(), active:0, phaseElapsed:0, done:0, right:0};
   lastAct=Date.now(); lastTick=Date.now();
   loadPhase();
-  if(ses.pi>=ses.M.phases.length || !ses.queue.length){ ses=null; toast('いま出せるカードがありません'); return; }
+  if(ses.pi>=ses.M.phases.length || !ses.queue.length){
+    ses=null;
+    toast(dueList('w').length? 'このモードは今日のぶんが終わっています' : '今日のぶんは終わりました');
+    return; }
   view='ses'; render();
 }
 function loadPhase(){
   while(ses.pi < ses.M.phases.length){
     const p = ses.M.phases[ses.pi];
-    ses.queue = p.k==='miss' ? ses.miss.slice() : p.get();
+    ses.queue = p.get();
+    if(p.k==='miss'){ ses.queue = ses.queue.filter(id=>!ses.done0 || true); }
     ses.i=0; ses.shown=false; ses.pick=null; ses.graded=false; ses.hint=false; ses.phaseElapsed=0;
     if(ses.queue.length) return;
     ses.pi++;
@@ -553,7 +578,7 @@ function score(id, g){
   grade(id, g);
   const p = ses.M.phases[ses.pi];
   if(g===0 && !ses.miss.includes(id)) ses.miss.push(id);
-  if(g===2 && p.k==='miss') ses.miss = ses.miss.filter(x=>x!==id);
+  if(g!==0) ses.miss = ses.miss.filter(x=>x!==id);
 }
 function answer(g){ const id=ses.queue[ses.i];
   score(id,g); ses.done++; if(g===2) ses.right++; nextCard(); }
@@ -762,7 +787,9 @@ function vHome(){
   const warn = PERSIST==='none' ? `<div class="warn">この開き方では学習記録が残りません。
     設定（≡）→「進捗のバックアップ」で書き出すか、使い方ガイドの開き方を試してください。</div>` : '';
   const dw=dueList('w').length, dp=dueList('p').length;
-  const nn=newList('w',S.newPerDay).length;
+  const nn=newList('w', remainNew()).length;
+  const np=Math.max(0, 2-probToday());
+  const nm=missToday().length;
   const T=totals();
   const donefull = L.new>=Math.min(S.newPerDay,nn+L.new) && dw===0 && L.a>0;
   const fresh = T.seen===0 ? `
@@ -791,13 +818,14 @@ function vHome(){
   </div>
 
   <button class="mode primary ${donefull?'done':''}" data-go="full">
-    <span class="pill">${nn+dw+2}枚</span><b>15分ルーティン</b>
-    <span>新出${S.newPerDay}語 5分 → 前日の復習 3分 → 英文問題 5分 → 間違えた語だけ 2分</span></button>
-  <button class="mode" data-go="ten"><span class="pill">${Math.min(10,nn)+Math.min(25,dw)+1}枚</span><b>10分コース</b>
+    <span class="pill">${nn+dw+np+nm}枚</span><b>15分ルーティン</b>
+    <span>新出${nn}語 5分 → 復習${dw}枚 3分 → 英文問題${np}問 5分 → 間違えた語${nm}枚 2分
+    ${newToday()?`／今日はすでに${newToday()}語`:''}</span></button>
+  <button class="mode" data-go="ten"><span class="pill">${Math.min(10,nn)+Math.min(25,dw)+Math.max(0,1-probToday())}枚</span><b>10分コース</b>
     <span>疲れた日はこちら。単語 → 英文1問 → 取りこぼし</span></button>
-  <button class="mode" data-go="one"><span class="pill">5枚</span><b>1分だけ</b>
+  <button class="mode" data-go="one"><span class="pill">${Math.min(5, dw||nn)}枚</span><b>1分だけ</b>
     <span>トイレ・歯磨き・エレベーター待ちに5枚だけ</span></button>
-  <button class="mode" data-go="rev"><span class="pill">${dw+dp}枚</span><b>復習だけ</b>
+  <button class="mode" data-go="rev"><span class="pill">${dw+dp+nm}枚</span><b>復習だけ</b>
     <span>新しい語は増やさず、期限が来たものだけ回す</span></button>
   <button class="mode" data-go="prob"><span class="pill">4問</span><b>英文問題だけ</b>
     <span>本試験と同じ選択式。空欄補充・理論○×・計算・組合せを、語句まで分解して解説</span></button>
