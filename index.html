@@ -1009,7 +1009,7 @@ function bar(){
 
 function vFinish(){
   const min = Math.max(1, Math.round((ses.active||0)/60));
-  const T=totals(), dw=dueList('w').length;
+  const T=totals(), dw=dueFresh('w').length + dueFresh('p').length + missToday().length;
   return `${ladderHTML()}
   <div class="panel" style="text-align:center">
     <div class="eyebrow">${esc(ses.M.name)} 完了</div>
