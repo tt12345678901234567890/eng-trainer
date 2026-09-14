@@ -266,7 +266,7 @@ function addDays(s,n){const d=new Date(s+'T00:00:00');d.setDate(d.getDate()+n);
   d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)}
 function daysBetween(a,b){return Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/86400000)}
 
-function blank(){return {v:1, ov:3, cards:{}, log:{}, newPerDay:10, unitMax:14, theme:'light',
+function blank(){return {v:1, ov:4, cards:{}, log:{}, newPerDay:10, unitMax:14, theme:'light',
   streak:0, last:'', started:today(), placement:null, order:null}}
 
 async function load(){
@@ -274,7 +274,7 @@ async function load(){
   try{ const v = await Store.get(KEY); S = v ? JSON.parse(v) : blank(); }
   catch(e){ S = blank(); }
   if(!S || !S.cards) S = blank();
-  if(!S.order || S.ov!==3){ S.order = buildOrder(); S.ov = 3; }
+  if(!S.order || S.ov!==4){ S.order = buildOrder(); S.ov = 4; }
   bakN = Object.keys(S.cards).length;
 }
 let saveT=null, lastSaved=0, bakN=0;
@@ -300,12 +300,14 @@ function saveNow(){ clearTimeout(saveT);
 function buildOrder(){
   const rank = {ch:0, pr:1, vb:2, gr:3, w:4};
   const ws = CARDS.filter(c=>WORDT.includes(c.t)).sort((a,b)=>{
-    const ra=rank[a.t], rb=rank[b.t], ca=ra<=2?0:1, cb=rb<=2?0:1;
+    /* つながり→対語→動詞→文法 を土台として先に出し、そのあと単語をステージ順に配る */
+    const ra=rank[a.t], rb=rank[b.t], ca=ra<=3?0:1, cb=rb<=3?0:1;
     if(ca!==cb) return ca-cb;
     if(ca===0) return (ra-rb) || (a.u-b.u) || (a.id-b.id);
     return (a.u-b.u) || (ra-rb) || (a.id-b.id);
   }).map(c=>c.id);
-  const pw = x => x.t==='sc'?0 : x.t==='cz'?1 : x.t==='rd'?2 : (x.t==='tf'&&x.tp==='文法')?3
+  /* 否定表現の正誤は読解の土台なので、場面英文より前に出す */
+  const pw = x => (x.t==='tf'&&x.tp==='文法')?0 : x.t==='sc'?1 : x.t==='cz'?2 : x.t==='rd'?3
                 : x.t==='cl'?4 : x.t==='cb'?5 : 6;
   const ps = CARDS.filter(c=>PROBT.includes(c.t)).sort((a,b)=>
     (pw(a)-pw(b)) || (a.u-b.u) || (a.id-b.id)).map(c=>c.id);
@@ -451,7 +453,7 @@ function importStr(v){
   try{
     const p=v.trim().split('|');
     if((p[0]!=='ET1' && p[0]!=='ET2') || p.length<9) return false;
-    const N=blank(); N.order=buildOrder(); N.ov=3;
+    const N=blank(); N.order=buildOrder(); N.ov=4;
     N.newPerDay=+p[1]||10; N.unitMax=+p[2]||14; N.streak=+p[3]||0;
     N.last=dstr(+p[4]); N.started=dstr(+p[5]); N.placement=(p[6]==='-'?null:+p[6]);
     if(p[7]) for(const t of p[7].split(',')){ const a=t.split('.');
