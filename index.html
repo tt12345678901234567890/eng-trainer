@@ -197,6 +197,38 @@ function initData(d){
 }
 /* 複数語の用語を、単語ごとの意味に分解する */
 const WDSKIP=new Set(['the','a','an']);
+/* 活用形（-s / -ed / -ing / 's）は原形に戻して引く */
+function wdLook(w){
+  const k=w.toLowerCase();
+  if(WD[k]) return WD[k];
+  const tries=[[/s$/,''],[/es$/,''],[/ies$/,'y'],[/ed$/,''],[/ed$/,'e'],
+               [/ing$/,''],[/ing$/,'e'],[/'s$/,''],[/d$/,'']];
+  for(const [re,rep] of tries){
+    if(re.test(k)){ const b=k.replace(re,rep); if(b.length>2 && WD[b]) return WD[b]; }
+  }
+  return '';
+}
+/* 英文に出てくる語を、出てきた順に拾って意味を付ける */
+function sentWords(text){
+  const toks=String(text||'').match(/[A-Za-z][A-Za-z'\-]*/g)||[];
+  const out=[], seen=new Set();
+  for(const t of toks){
+    const k=t.toLowerCase();
+    if(WDSKIP.has(k) || seen.has(k)) continue;
+    const j=wdLook(t);
+    if(!j) continue;
+    seen.add(k);
+    out.push([t, j]);
+  }
+  return out;
+}
+function sentWordsHTML(text, title){
+  const b=sentWords(text);
+  if(b.length<3) return '';
+  return `<div class="sec"><h4>${title||'英文の語'}</h4>`+
+    b.map(x=>`<div class="gl" style="font-size:13px;padding:2px 0"><b style="flex:0 0 46%">${esc(x[0])}</b>
+      <span>${esc(x[1])}</span></div>`).join('')+`</div>`;
+}
 function breakdown(en){
   const toks=en.match(/[A-Za-z][A-Za-z'\-]*/g)||[];
   if(toks.length<2) return [];
@@ -204,7 +236,7 @@ function breakdown(en){
   for(const t of toks){
     const k=t.toLowerCase();
     if(WDSKIP.has(k) || seen.has(k)) continue;
-    const j=WD[k];
+    const j=wdLook(t);
     if(!j) continue;
     seen.add(k);
     out.push([t, j]);
@@ -226,7 +258,7 @@ const STEPLABEL = ['当日','翌日','3日後','1週間','2週間','1か月'];
 const WORDT = ['w','pr','vb','ch','gr'];     // 単語プール
 const PROBT = ['tf','sc','cz','rd','cl','cb'];  // 英文問題プール
 
-const APP_VER='1.6.1', APP_BUILD='2026-09-15';
+const APP_VER='1.8.1', APP_BUILD='2026-09-15';
 const KEY='engtrainer_v1';
 let S = null, view='home', ses=null;
 
@@ -900,9 +932,14 @@ function renderCard(c){
   const shown = ses.shown;
   let body='';
   if(c.t==='w'){
+    /* 「Software→ソフトウェア」のようにカナが答えそのものになる語は、表でカナを伏せる */
+    const nz = x => String(x||'').replace(/[・（）()\s　ーズス]/g,'');
+    const kanaIsAnswer = c.k && nz(c.k) && nz(c.j) &&
+      (nz(c.k)===nz(c.j) || nz(c.k).indexOf(nz(c.j))===0 || nz(c.j).indexOf(nz(c.k))===0);
     body = `<div class="front en">${esc(c.e)}</div>
-      ${c.k?`<div class="kana">${esc(c.k)}</div>`:''}` +
+      ${(c.k && !kanaIsAnswer)?`<div class="kana">${esc(c.k)}</div>`:''}` +
       (shown?`<div class="hr"></div><div class="ansjp">${esc(c.j)}</div>
+        ${kanaIsAnswer?`<div class="kana">${esc(c.k)}</div>`:''}
         ${c.sy?`<div class="muted">＝ ${esc(c.sy)}</div>`:''}
         ${breakdownHTML(c.e)}`:'');
   } else if(c.t==='pr'){
@@ -930,16 +967,22 @@ function renderCard(c){
       (shown?`<div class="hr"></div>
         <div style="font-size:17px;font-weight:600;line-height:1.8;color:var(--dr)">${esc(c.j)}</div>`:'');
   } else if(c.t==='gr'){
-    body = `<div class="muted">${esc(c.ti)}</div><div class="front small en">${esc(c.e)}</div>` +
-      (shown?`<div class="hr"></div><div class="ansjp" style="font-size:17px">${esc(c.j)}</div>
-        <div class="exp">${esc(c.x)}</div>`:'');
+    /* 表は問いだけ、裏に答えを出す */
+    body = `<div class="muted">${esc(c.ti)}</div>
+      ${c.e?`<div class="front small en">${esc(c.e)}</div>`:''}
+      ${c.q?`<div style="font-size:16px;font-weight:600;margin-top:${c.e?'10px':'2px'}">${esc(c.q)}</div>`:''}` +
+      (shown?`<div class="hr"></div>
+        <div class="${c.ae?'en':''}" style="font-size:${c.ae?'17':'16'}px;font-weight:600;
+          line-height:1.9;white-space:pre-wrap;color:var(--dr)">${esc(c.j)}</div>
+        <div class="sec"><h4>ポイント</h4><div class="exp">${esc(c.x)}</div></div>`:'');
   } else if(c.t==='sc'){
     const M=markHTML(c.e);
     body = `<div class="muted">場面で複数語をまとめて復習 — ${esc(c.ti)}</div>
       <div class="front small en">${M.html}</div>` +
       (shown?`<div class="hr"></div><div style="font-size:15px">${esc(c.j)}</div>
         <div class="sec"><h4>復習語彙</h4>${voHTML(c.vo)}</div>
-        ${notesHTML(M.notes)}`
+        ${notesHTML(M.notes)}
+        ${sentWordsHTML(c.e)}`
       : (ses.hint?`<div class="hr"></div><div class="sec"><h4>この場面の語</h4>${voHTML(c.vo)}</div>`
          : `<button class="hintbtn" data-hint="1">語句のヒントを見る</button>`));
   } else if(c.t==='tf'){
@@ -952,6 +995,7 @@ function renderCard(c){
         ${c.x?`<div class="sec"><h4>判定の決め手</h4><div class="exp">${esc(c.x)}</div></div>`:''}
         ${notesHTML(M.notes)}
         ${glossHTML(G,'この英文で押さえる語')}
+        ${sentWordsHTML(c.e)}
         <div class="legend"><span class="mk-vb">青線</span>＝会計処理を決める動詞　
           <span class="mk-wd">朱線</span>＝結論を変える語　
           <span class="mk-num">網</span>＝金額・数量　<span class="mk-date">枠</span>＝日付</div>
@@ -967,7 +1011,8 @@ function renderCard(c){
         <div class="sec"><h4>判断の根拠</h4><div class="exp">${esc(c.x)}</div></div>
         <div class="sec"><h4>全文の意味</h4><div style="font-size:14px">${esc(c.j)}</div></div>
         <div class="sec"><h4>この場面の語</h4>${voHTML(c.vo)}</div>
-        ${notesHTML(M.notes)}`
+        ${notesHTML(M.notes)}
+        ${sentWordsHTML(c.e)}`
       : (ses.hint?`<div class="hr"></div><div class="sec"><h4>この場面の語</h4>${voHTML(c.vo)}</div>`
          : `<button class="hintbtn" data-hint="1">語句のヒントを見る</button>`));
   } else if(c.t==='rd'||c.t==='cl'){
@@ -979,6 +1024,7 @@ function renderCard(c){
         ${c.vo?`<div class="sec"><h4>英語は、特にこの語を押さえればよい</h4>${voHTML(c.vo)}</div>`
           :glossHTML(G,'この英文で押さえる語')}
         ${notesHTML(M.notes)}
+        ${sentWordsHTML(c.e)}
         <div class="legend"><span class="mk-num">網</span>＝金額・数量　<span class="mk-date">枠</span>＝日付　
           <span class="mk-vb">青線</span>＝処理を決める動詞　<span class="mk-wd">朱線</span>＝結論を変える語</div>`
       : `<div class="sec"><h4>解く手順</h4><div class="step5">${DATA.s5.map(t=>esc(t)).join('<br>')}</div></div>
@@ -992,7 +1038,8 @@ function renderCard(c){
         ${shown?`<div class="muted" style="margin-top:3px">${esc(it[2])}</div>
         <div style="font-size:13px;color:${it[3]==='O'?'var(--moss)':'var(--cr)'}">
         ${it[3]==='O'?'○':'✕'} ${esc(it[4])}</div>
-        ${notesHTML(M.notes)}`:''}</div>`}).join('');
+        ${notesHTML(M.notes)}
+        ${sentWordsHTML(it[1])}`:''}</div>`}).join('');
   }
   let chos='';
   if(c.ch2){
