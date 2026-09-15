@@ -226,7 +226,7 @@ const STEPLABEL = ['当日','翌日','3日後','1週間','2週間','1か月'];
 const WORDT = ['w','pr','vb','ch','gr'];     // 単語プール
 const PROBT = ['tf','sc','cz','rd','cl','cb'];  // 英文問題プール
 
-const APP_VER='1.6.0', APP_BUILD='2026-09-15';
+const APP_VER='1.6.1', APP_BUILD='2026-09-15';
 const KEY='engtrainer_v1';
 let S = null, view='home', ses=null;
 
@@ -1199,9 +1199,15 @@ function vMore(){
   ${backupPanel(false)}
   <div class="panel"><div class="eyebrow">バージョン</div>
     <div class="muted"><b>アプリ v${APP_VER}</b>（${APP_BUILD}）／
-      教材データ v${(DATA&&DATA.v)||'—'}（カード ${CARDS.length}枚）<br>
-      GitHubの index.html を差し替えたあとは、ここの番号が変わっているか確認してください。
-      変わっていなければ、画面を下に引っ張って再読み込みしてください。</div>
+      教材データ v${(DATA&&DATA.v)||'—'}（カード ${CARDS.length}枚・語義辞書 ${Object.keys(WD).length}語）<br>
+      index.html を差し替えたあとは、ここの番号が変わっているか確認してください。
+      変わっていなければ画面を下に引っ張って再読み込み。</div>
+    <label class="big solid" style="display:grid;place-items:center;margin-top:10px;min-height:48px;cursor:pointer">
+      教材データを読み込み直す
+      <input type="file" id="dfile" accept=".json,application/json" style="display:none">
+    </label>
+    <div class="muted" style="margin-top:6px">新しい cards.json を選ぶと教材だけ入れ替わります。
+      学習記録はそのまま残ります。</div>
   </div>
   <div class="panel"><div class="eyebrow">保存の状態</div>
     <div class="muted">いまの保存先：<b>${PERSIST_LABEL[PERSIST]}</b>／学習済み ${Object.keys(S.cards).length}枚<br>
@@ -1383,7 +1389,10 @@ document.addEventListener('change', async e=>{
     const d=JSON.parse(txt);
     if(!d || !Array.isArray(d.c)) throw new Error('bad');
     try{ localStorage.setItem(DKEY, txt); }catch(err){}
+    const back = (S && Object.keys(S.cards||{}).length) ? 'more' : 'home';
     await useData(d);
+    view = back; render();
+    toast('教材データを更新しました');
   }catch(err){ showLoader('このファイルは読み込めませんでした。cards.json を選んでください。'); }
 });
 (async function boot(){
