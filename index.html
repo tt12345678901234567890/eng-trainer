@@ -190,9 +190,33 @@ textarea{width:100%;min-height:88px;padding:10px;border-radius:11px;border:1px s
 const EMBEDDED = null;
 const DKEY='engtrainer_data_v1';
 let DATA=null, CARDS=[], BYID={}, UNITS=[], PRI=[];
+let WD={};
 function initData(d){
   DATA=d; CARDS=d.c; BYID={}; CARDS.forEach(c=>BYID[c.id]=c);
-  UNITS=d.un; PRI=d.pri; LEX=null; KANA=null;
+  UNITS=d.un; PRI=d.pri; LEX=null; KANA=null; WD=d.wd||{};
+}
+/* 複数語の用語を、単語ごとの意味に分解する */
+const WDSKIP=new Set(['the','a','an']);
+function breakdown(en){
+  const toks=en.match(/[A-Za-z][A-Za-z'\-]*/g)||[];
+  if(toks.length<2) return [];
+  const out=[], seen=new Set();
+  for(const t of toks){
+    const k=t.toLowerCase();
+    if(WDSKIP.has(k) || seen.has(k)) continue;
+    const j=WD[k];
+    if(!j) continue;
+    seen.add(k);
+    out.push([t, j]);
+  }
+  return out.length>=2 ? out : [];
+}
+function breakdownHTML(en){
+  const b=breakdown(en);
+  if(!b.length) return '';
+  return `<div class="sec"><h4>語ごとの意味</h4>`+
+    b.map(x=>`<div class="gl"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('')+
+    `</div>`;
 }
 
 /* 間隔復習：スライド18「翌日・3日後・1週間後・2週間後」＋定着確認 */
@@ -202,6 +226,7 @@ const STEPLABEL = ['当日','翌日','3日後','1週間','2週間','1か月'];
 const WORDT = ['w','pr','vb','ch','gr'];     // 単語プール
 const PROBT = ['tf','sc','cz','rd','cl','cb'];  // 英文問題プール
 
+const APP_VER='1.6.0', APP_BUILD='2026-09-15';
 const KEY='engtrainer_v1';
 let S = null, view='home', ses=null;
 
@@ -866,8 +891,9 @@ function vSession(){
 
 function chips(c){
   const u = (UNITS.find(u=>u[0]===c.u)||[0,''])[1];
+  /* 章タグは用語集のページ割りに由来するズレがあるため表示しない */
   return `<div><span class="chip dr">${esc(c.tp||'')}</span>${u?`<span class="chip">${esc(u)}</span>`:''}
-    ${c.ch?`<span class="chip">${esc(c.ch)}</span>`:''}${c.sb?`<span class="chip">${esc(c.sb)}</span>`:''}</div>`;
+    ${c.sb?`<span class="chip">${esc(c.sb)}</span>`:''}</div>`;
 }
 
 function renderCard(c){
@@ -877,7 +903,8 @@ function renderCard(c){
     body = `<div class="front en">${esc(c.e)}</div>
       ${c.k?`<div class="kana">${esc(c.k)}</div>`:''}` +
       (shown?`<div class="hr"></div><div class="ansjp">${esc(c.j)}</div>
-        ${c.sy?`<div class="muted">＝ ${esc(c.sy)}</div>`:''}`:'');
+        ${c.sy?`<div class="muted">＝ ${esc(c.sy)}</div>`:''}
+        ${breakdownHTML(c.e)}`:'');
   } else if(c.t==='pr'){
     body = `<div class="muted">意味は？（対になる語もセットで）</div>
       <div class="front en">${esc(c.e)}</div>
@@ -885,7 +912,8 @@ function renderCard(c){
       (shown?`<div class="hr"></div><div class="ansjp">${esc(c.j)}</div>
         <div class="sec"><h4>対になる語</h4>
           <div class="gl"><b>${esc(c.e2)}${c.k2?`<span class="kn">${esc(c.k2)}</span>`:''}</b>
-            <span>${esc(c.j2)}</span></div></div>`:'');
+            <span>${esc(c.j2)}</span></div></div>
+        ${breakdownHTML(c.e)}`:'');
   } else if(c.t==='vb'){
     body = `<div class="muted">この語の「型」は？</div><div class="front en">${esc(c.e)}</div>
       ${c.k?`<div class="kana">${esc(c.k)}</div>`:''}` +
@@ -1145,7 +1173,9 @@ function searchHTML(){
   return res.map(c=>`<div style="padding:8px 0;border-bottom:1px solid var(--line)">
     <div class="en" style="font-size:15px">${esc(c.e)}</div>
     ${c.k?`<div class="kana">${esc(c.k)}</div>`:''}
-    <div class="muted">${esc(c.j||'')}${c.sy?'　＝ '+esc(c.sy):''}</div></div>`).join('');
+    <div class="muted">${esc(c.j||'')}${c.sy?'　＝ '+esc(c.sy):''}</div>
+    ${breakdown(c.e||'').map(x=>`<div class="gl" style="font-size:12px"><b>${esc(x[0])}</b>
+      <span>${esc(x[1])}</span></div>`).join('')}</div>`).join('');
 }
 function vMore(){
   return `
@@ -1167,6 +1197,12 @@ function vMore(){
     ${DATA.s5.map(s=>`<div style="font-size:14px;padding:3px 0">${esc(s)}</div>`).join('')}
   </div>
   ${backupPanel(false)}
+  <div class="panel"><div class="eyebrow">バージョン</div>
+    <div class="muted"><b>アプリ v${APP_VER}</b>（${APP_BUILD}）／
+      教材データ v${(DATA&&DATA.v)||'—'}（カード ${CARDS.length}枚）<br>
+      GitHubの index.html を差し替えたあとは、ここの番号が変わっているか確認してください。
+      変わっていなければ、画面を下に引っ張って再読み込みしてください。</div>
+  </div>
   <div class="panel"><div class="eyebrow">保存の状態</div>
     <div class="muted">いまの保存先：<b>${PERSIST_LABEL[PERSIST]}</b>／学習済み ${Object.keys(S.cards).length}枚<br>
       最後に控えを取ったのは ${S.bak?new Date(S.bak).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'まだありません'}<br>
@@ -1217,7 +1253,7 @@ function render(){
   const b=bar(), bw=document.getElementById('bar');
   document.getElementById('barin').innerHTML=b;
   bw.style.display = b? 'block':'none';
-  const sub={home:'令和9年短答・英語対策',ses:ses?ses.M.name:'',fin:'おつかれさまでした',
+  const sub={home:'令和9年短答・英語対策　v'+APP_VER,ses:ses?ses.M.name:'',fin:'おつかれさまでした',
     dash:'学習状況',more:'設定と用語検索',place:'レベル判定テスト'}[view]||'';
   document.getElementById('hsub').textContent=sub;
   window.scrollTo(0,0);
