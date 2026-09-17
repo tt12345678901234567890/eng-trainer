@@ -258,7 +258,7 @@ const STEPLABEL = ['当日','翌日','3日後','1週間','2週間','1か月'];
 const WORDT = ['w','pr','vb','ch','gr'];     // 単語プール
 const PROBT = ['tf','sc','cz','rd','cl','cb'];  // 英文問題プール
 
-const APP_VER='1.8.1', APP_BUILD='2026-09-15';
+const APP_VER='1.8.2', APP_BUILD='2026-09-15';
 const KEY='engtrainer_v1';
 let S = null, view='home', ses=null;
 
@@ -974,6 +974,7 @@ function renderCard(c){
       (shown?`<div class="hr"></div>
         <div class="${c.ae?'en':''}" style="font-size:${c.ae?'17':'16'}px;font-weight:600;
           line-height:1.9;white-space:pre-wrap;color:var(--dr)">${esc(c.j)}</div>
+        ${sentWordsHTML(c.ae ? c.j : c.e, '語ごとの意味')}
         <div class="sec"><h4>ポイント</h4><div class="exp">${esc(c.x)}</div></div>`:'');
   } else if(c.t==='sc'){
     const M=markHTML(c.e);
