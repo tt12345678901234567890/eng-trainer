@@ -258,7 +258,7 @@ const STEPLABEL = ['当日','翌日','3日後','1週間','2週間','1か月'];
 const WORDT = ['w','pr','vb','ch','gr'];     // 単語プール
 const PROBT = ['tf','sc','cz','rd','cl','cb'];  // 英文問題プール
 
-const APP_VER='1.8.2', APP_BUILD='2026-09-15';
+const APP_VER='1.9.0', APP_BUILD='2026-09-15';
 const KEY='engtrainer_v1';
 let S = null, view='home', ses=null;
 
@@ -609,10 +609,23 @@ const MODES = {
     {k:'prob', label:'英文問題', sec:0, get:()=>probPick(4)},
     {k:'miss', label:'間違えた分', sec:0, get:()=>missToday()}]}
 };
+/* 復習と新規を交互に取る。復習だけで枠が埋まって新しい問題が入らないのを防ぐ */
 function probPick(n){
-  const d = dueFresh('p'); const out = d.slice(0,n);
-  if(out.length<n){ for(const id of S.order.p){ if(S.cards[id]) continue;
-    if(BYID[id].u > S.unitMax) continue; out.push(id); if(out.length>=n) break; } }
+  if(!(n>0)) return [];
+  const due = dueFresh('p');
+  const fresh = [];
+  for(const id of S.order.p){
+    if(S.cards[id]) continue;
+    if(BYID[id].u > S.unitMax) continue;
+    fresh.push(id);
+    if(fresh.length >= n) break;
+  }
+  const out = [];
+  let i = 0, j = 0;
+  while(out.length < n && (i < fresh.length || j < due.length)){
+    if(i < fresh.length) out.push(fresh[i++]);          // 新しい問題を先に
+    if(out.length < n && j < due.length) out.push(due[j++]);
+  }
   return out;
 }
 function startSession(mode){
