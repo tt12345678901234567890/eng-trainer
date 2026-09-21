@@ -258,7 +258,7 @@ const STEPLABEL = ['当日','翌日','3日後','1週間','2週間','1か月'];
 const WORDT = ['w','pr','vb','ch','gr'];     // 単語プール
 const PROBT = ['tf','sc','cz','rd','cl','cb'];  // 英文問題プール
 
-const APP_VER='1.9.0', APP_BUILD='2026-09-15';
+const APP_VER='1.10.0', APP_BUILD='2026-09-15';
 const KEY='engtrainer_v1';
 let S = null, view='home', ses=null;
 
@@ -628,7 +628,47 @@ function probPick(n){
   }
   return out;
 }
+/* 中断した位置を記録しておき、ホームに戻っても続きから再開できるようにする */
+function saveCur(){
+  if(!ses || ses.pi>=ses.M.phases.length || !ses.queue.length){ S.cur=null; }
+  else {
+    S.cur={m:ses.mode, pi:ses.pi, i:ses.i, q:ses.queue.slice(), ms:ses.miss.slice(),
+           ac:ses.active||0, pe:ses.phaseElapsed||0, dn:ses.done||0, rt:ses.right||0,
+           d:today()};
+  }
+  save();
+}
+function canResume(mode){
+  const c=S.cur;
+  if(!c || c.d!==today() || !MODES[c.m]) return false;
+  if(mode && c.m!==mode) return false;
+  if(!Array.isArray(c.q) || !c.q.length) return false;
+  if(c.i>=c.q.length) return false;
+  return true;
+}
+function resumeLeft(){
+  const c=S.cur; if(!canResume()) return 0;
+  let n=c.q.length-c.i;
+  for(let k=c.pi+1;k<MODES[c.m].phases.length;k++){
+    try{ n += (MODES[c.m].phases[k].get()||[]).length; }catch(e){}
+  }
+  return n;
+}
+function resumeSession(){
+  const c=S.cur;
+  const M=MODES[c.m];
+  ses={mode:c.m, M, pi:c.pi, queue:c.q.filter(id=>BYID[id]), miss:(c.ms||[]).filter(id=>BYID[id]),
+       i:Math.min(c.i, c.q.length-1), shown:false, pick:null, graded:false, hint:false,
+       t0:Date.now(), active:c.ac||0, phaseElapsed:c.pe||0, done:c.dn||0, right:c.rt||0};
+  lastAct=Date.now(); lastTick=Date.now();
+  if(ses.i>=ses.queue.length){ ses.pi++; loadPhase(); }
+  if(ses.pi>=ses.M.phases.length || !ses.queue.length){ ses=null; S.cur=null; save();
+    toast('今日のぶんは終わりました'); return; }
+  view='ses'; render();
+}
+
 function startSession(mode){
+  if(canResume(mode)){ return resumeSession(); }
   const M = MODES[mode];
   ses = {mode, M, pi:0, queue:[], miss:[], i:0, shown:false, pick:null, graded:false, hint:false,
          t0:Date.now(), active:0, phaseElapsed:0, done:0, right:0};
@@ -653,7 +693,8 @@ function loadPhase(){
 function nextCard(){
   ses.shown=false; ses.pick=null; ses.graded=false; ses.hint=false; ses.i++;
   if(ses.i>=ses.queue.length){ ses.pi++; loadPhase(); }
-  if(ses.pi>=ses.M.phases.length){ view='fin'; }
+  if(ses.pi>=ses.M.phases.length){ view='fin'; S.cur=null; save(); }
+  else saveCur();
   render();
 }
 function score(id, g){
@@ -884,7 +925,14 @@ function vHome(){
     <textarea id="io2" placeholder="ET2|10|14|… で始まる文字列を貼り付け"></textarea>
     <button class="big solid" data-imp2="1" style="width:100%;margin-top:8px;min-height:50px">復元する</button>
   </div>` : '';
+  const res = canResume() ? `
+  <button class="mode primary" data-go="resume" style="border-color:var(--moss)">
+    <span class="pill" style="background:var(--moss)">${resumeLeft()}枚</span>
+    <b>続きから再開</b>
+    <span>${esc(MODES[S.cur.m].name)} の ${esc(MODES[S.cur.m].phases[S.cur.pi].label)} ${S.cur.i+1}枚目から</span>
+  </button>` : '';
   return `${warn}${fresh}${unsaved()?backupPanel(true):''}
+  ${res}
   ${ladderHTML()}
   <div class="muted" style="text-align:center;margin-bottom:2px">
     復習の階段 — 正解すると1段上がり、間違えると当日に戻ります</div>
@@ -1331,6 +1379,7 @@ document.addEventListener('click', e=>{
   if(!t) return;
   const d=t.dataset;
   if(d.go){
+    if(d.go==='resume'){ return resumeSession(); }
     if(d.go==='home'){view='home';}
     else if(d.go==='more'){view='more';}
     else if(d.go==='place'){plc=null;view='place';}
@@ -1381,7 +1430,7 @@ document.addEventListener('click', e=>{
   if(d.np){ S.newPerDay=Number(d.np); save(); return render(); }
   if(d.th){ S.theme = S.theme==='dark'?'light':'dark'; save(); return render(); }
   if(d.reset){ if(confirm('学習記録をすべて消します。よろしいですか？')){
-      S=blank(); S.order=buildOrder(); save(); view='home'; return render(); } return; }
+      S=blank(); S.order=buildOrder(); S.cur=null; save(); view='home'; return render(); } return; }
   if(d.ppick!==undefined){ if(plc.shown) return; plc.pick=Number(d.ppick); plc.shown=true;
     if(plc.pick===DATA.pl[plc.i].answer) plc.right++; return render(); }
   if(d.pnext){ plc.i++; plc.pick=null; plc.shown=false;
@@ -1394,17 +1443,19 @@ document.addEventListener('input', e=>{
 document.addEventListener('change', e=>{
   if(e.target.id==='umax'){ S.unitMax=Number(e.target.value); save(); render(); }
 });
-document.getElementById('navHome').onclick=()=>{view='home';render()};
-document.getElementById('navDash').onclick=()=>{view='dash';render()};
-document.getElementById('navMore').onclick=()=>{view='more';render()};
+function leaveSession(){ if(view==='ses' && ses){ closeBlock(); saveCur(); } }
+document.getElementById('navHome').onclick=()=>{leaveSession();view='home';render()};
+document.getElementById('navDash').onclick=()=>{leaveSession();view='dash';render()};
+document.getElementById('navMore').onclick=()=>{leaveSession();view='more';render()};
 
 setInterval(tick,1000);
 ['pointerdown','keydown','touchstart','scroll'].forEach(ev=>
   document.addEventListener(ev,()=>{lastAct=Date.now()},{passive:true}));
 document.addEventListener('visibilitychange',()=>{
-  if(!isVisible()){ closeBlock(); saveNow(); } else { lastTick=Date.now(); lastAct=Date.now(); }
+  if(!isVisible()){ closeBlock(); saveCur(); saveNow(); }
+  else { lastTick=Date.now(); lastAct=Date.now(); }
 });
-window.addEventListener('pagehide',()=>{ closeBlock(); saveNow(); });
+window.addEventListener('pagehide',()=>{ closeBlock(); saveCur(); saveNow(); });
 window.addEventListener('beforeunload',()=>{ closeBlock(); saveNow(); });
 
 function vLoader(msg){
