@@ -258,7 +258,7 @@ const STEPLABEL = ['当日','翌日','3日後','1週間','2週間','1か月'];
 const WORDT = ['w','pr','vb','ch','gr'];     // 単語プール
 const PROBT = ['tf','sc','cz','rd','cl','cb'];  // 英文問題プール
 
-const APP_VER='1.10.0', APP_BUILD='2026-09-15';
+const APP_VER='1.11.0', APP_BUILD='2026-09-24';
 const KEY='engtrainer_v1';
 let S = null, view='home', ses=null;
 
@@ -535,7 +535,7 @@ function downloadProgress(){
     const b=new Blob([v],{type:'text/plain'});
     const u=URL.createObjectURL(b);
     const a=document.createElement('a');
-    a.href=u; a.download=`英語すきま_進捗_${stamp()}.txt`;
+    a.href=u; a.download=`英語すきま_進捗_${stamp()}_${Object.keys(S.cards).length}枚.txt`;
     document.body.appendChild(a); a.click();
     setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(u); }, 1000);
     S.bak=Date.now(); save();
@@ -555,26 +555,39 @@ function copyProgress(){
   toast('欄の文字を全選択してコピーしてください');
 }
 /* 最後の控えより後に学習していれば「未保存」 */
+function bakAgeDays(){
+  if(!S.bak) return 999;
+  return Math.floor((Date.now()-S.bak)/86400000);
+}
 function unsaved(){
   const last = S.last ? new Date(S.last+'T23:59:59').getTime() : 0;
   return Object.keys(S.cards).length>0 && (!S.bak || S.bak < (S.ts||0)-60000);
 }
 function backupPanel(big){
+  const age=bakAgeDays(), n=Object.keys(S.cards).length;
+  const stale = age>=3;
+  const lead = big
+    ? `<div style="font-size:14px;margin-bottom:10px">学習した記録は、この端末のブラウザの中にしかありません。
+        <b>ファイルに保存しておけば、消えても元に戻せます。</b></div>`
+    : '';
+  const status = `<div class="muted" style="margin-bottom:10px">
+      学習済み ${n}枚／最後の控え ${S.bak? new Date(S.bak).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) : 'まだありません'}
+      ${stale?`<b style="color:var(--cr)">（${age>900?'未取得':age+'日前'}）</b>`:''}</div>`;
   return `<div class="panel" style="${big?'border-color:var(--cr);border-width:2px':''}">
     <div class="eyebrow">進捗の控え${big?' — 未保存':''}</div>
-    ${big?`<div style="font-size:14px;margin-bottom:10px">この開き方では、アプリを終了すると学習記録が消えることがあります。
-      <b>今日の分をここで控えておいてください。</b></div>`:''}
-    <div class="seg" style="margin-bottom:8px">
-      <button data-copyp="1">コピー</button>
-      <button data-savep="1">ファイルに保存</button>
-    </div>
-    <textarea id="io" placeholder="ここに出た文字列をメモアプリに貼るか、「ファイルに保存」でファイルアプリに置いてください。">${esc(ioText)}</textarea>
-    <div class="seg" style="margin-top:8px">
-      <button data-imp="1">貼り付けから復元</button>
-      <label style="flex:1;padding:9px 0;border:1px solid var(--line);border-radius:10px;
-        background:var(--card);font-size:14px;text-align:center">ファイルから復元
-        <input type="file" id="pfile" accept=".txt,text/plain" style="display:none"></label>
-    </div>
+    ${lead}${status}
+    <button class="big solid" data-savep="1" style="width:100%;min-height:52px">
+      ファイルに保存<small>ファイルアプリに置いておく</small></button>
+    <label class="big" style="display:grid;place-items:center;width:100%;min-height:52px;margin-top:8px;cursor:pointer">
+      ファイルから復元<small>保存したファイルを選ぶ</small>
+      <input type="file" id="pfile" accept=".txt,text/plain" style="display:none">
+    </label>
+    <button class="chip" data-txt="1" style="margin-top:10px">文字列でやりとりする</button>
+    ${S.showtxt?`<div style="margin-top:8px">
+      <div class="seg" style="margin-bottom:8px">
+        <button data-copyp="1">コピー</button><button data-imp="1">貼り付けから復元</button></div>
+      <textarea id="io" placeholder="「コピー」を押すとここに出ます。メモアプリに貼って保管してください。">${esc(ioText)}</textarea>
+    </div>`:''}
   </div>`;
 }
 
@@ -925,13 +938,14 @@ function vHome(){
     <textarea id="io2" placeholder="ET2|10|14|… で始まる文字列を貼り付け"></textarea>
     <button class="big solid" data-imp2="1" style="width:100%;margin-top:8px;min-height:50px">復元する</button>
   </div>` : '';
+  const needBak = Object.keys(S.cards).length>0 && bakAgeDays()>=3;
   const res = canResume() ? `
   <button class="mode primary" data-go="resume" style="border-color:var(--moss)">
     <span class="pill" style="background:var(--moss)">${resumeLeft()}枚</span>
     <b>続きから再開</b>
     <span>${esc(MODES[S.cur.m].name)} の ${esc(MODES[S.cur.m].phases[S.cur.pi].label)} ${S.cur.i+1}枚目から</span>
   </button>` : '';
-  return `${warn}${fresh}${unsaved()?backupPanel(true):''}
+  return `${warn}${fresh}${(unsaved()||needBak)?backupPanel(true):''}
   ${res}
   ${ladderHTML()}
   <div class="muted" style="text-align:center;margin-bottom:2px">
@@ -1161,7 +1175,9 @@ function vFinish(){
   ${backupPanel(true)}
   ${dw?`<button class="mode" data-go="rev"><span class="pill">${dw}枚</span><b>まだ復習が残っています</b>
     <span>時間があれば続けて回す</span></button>`:''}
-  <button class="mode" data-go="home"><b>ホームに戻る</b><span>連続 ${S.streak} 日</span></button>
+  <button class="mode primary" data-savehome="1" style="border-color:var(--moss)">
+    <b>控えを保存してホームへ</b><span>ファイルアプリに保存してから戻ります</span></button>
+  <button class="mode" data-go="home"><b>そのままホームに戻る</b><span>連続 ${S.streak} 日</span></button>
 `;
 }
 
@@ -1375,7 +1391,7 @@ function render(){
 }
 
 document.addEventListener('click', e=>{
-  const t=e.target.closest('[data-go],[data-show],[data-g],[data-tf],[data-pick],[data-np],[data-th],[data-reset],[data-ppick],[data-pnext],[data-next],[data-re],[data-exp],[data-imp],[data-imp2],[data-hint],[data-copyp],[data-savep]');
+  const t=e.target.closest('[data-go],[data-show],[data-g],[data-tf],[data-pick],[data-np],[data-th],[data-reset],[data-ppick],[data-pnext],[data-next],[data-re],[data-exp],[data-imp],[data-imp2],[data-hint],[data-copyp],[data-savep],[data-txt],[data-savehome]');
   if(!t) return;
   const d=t.dataset;
   if(d.go){
@@ -1412,8 +1428,10 @@ document.addEventListener('click', e=>{
       if(p.k!=='miss' && !ses.miss.includes(c.id)) ses.miss.push(c.id); }
     return render();
   }
+  if(d.txt){ S.showtxt = !S.showtxt; save(); return render(); }
   if(d.copyp){ copyProgress(); return render(); }
   if(d.savep){ downloadProgress(); return render(); }
+  if(d.savehome){ downloadProgress(); view='home'; return render(); }
   if(d.exp){ ioText = exportStr(); render();
     const n=document.getElementById('io'); if(n){ n.focus(); n.select(); }
     try{ if(navigator.clipboard && navigator.clipboard.writeText){
