@@ -258,7 +258,7 @@ const STEPLABEL = ['当日','翌日','3日後','1週間','2週間','1か月'];
 const WORDT = ['w','pr','vb','ch','gr'];     // 単語プール
 const PROBT = ['tf','sc','cz','rd','cl','cb'];  // 英文問題プール
 
-const APP_VER='1.11.2', APP_BUILD='2026-09-26';
+const APP_VER='1.12.0', APP_BUILD='2026-09-26';
 const KEY='engtrainer_v1';
 let S = null, view='home', ses=null;
 
@@ -594,10 +594,9 @@ function backupPanel(big){
 /* ---------------- session ---------------- */
 const MODES = {
   full:{name:'15分ルーティン', phases:[
-    {k:'new',  label:'新出語',      sec:300, get:()=>newList('w', remainNew())},
-    {k:'due',  label:'前日までの復習', sec:180, get:()=>dueFresh('w').slice(0,40)},
-    {k:'prob', label:'英文問題',     sec:300, get:()=>probPick(Math.max(0, 2-probToday()))},
-    {k:'miss', label:'間違えた語だけ', sec:120, get:()=>missToday()}]},
+    {k:'new',  label:'新出語',      sec:240, get:()=>newList('w', remainNew())},
+    {k:'due',  label:'前日までの復習', sec:360, get:()=>dueFresh('w').slice(0,80)},
+    {k:'prob', label:'英文問題',     sec:300, get:()=>probPick(Math.max(0, 4-probToday()))}]},
   ten:{name:'10分コース', phases:[
     {k:'new',  label:'新出語',   sec:180, get:()=>newList('w', remainNew(Math.min(10,S.newPerDay)))},
     {k:'due',  label:'復習',     sec:120, get:()=>dueFresh('w').slice(0,25)},
@@ -926,7 +925,7 @@ function vHome(){
     設定（≡）→「進捗のバックアップ」で書き出すか、使い方ガイドの開き方を試してください。</div>` : '';
   const dw=dueFresh('w').length, dp=dueFresh('p').length;
   const nn=newList('w', remainNew()).length;
-  const np=Math.max(0, 2-probToday());
+  const np=Math.max(0, 4-probToday());
   const nm=missToday().length;
   const T=totals();
   const donefull = L.new>=Math.min(S.newPerDay,nn+L.new) && dw===0 && L.a>0;
@@ -964,8 +963,8 @@ function vHome(){
   </div>
 
   <button class="mode primary ${donefull?'done':''}" data-go="full">
-    <span class="pill">${nn+dw+np+nm}枚</span><b>15分ルーティン</b>
-    <span>新出${nn}語 5分 → 復習${dw}枚 3分 → 英文問題${np}問 5分 → 間違えた語${nm}枚 2分
+    <span class="pill">${nn+Math.min(80,dw)+np}枚</span><b>15分ルーティン</b>
+    <span>新出${nn}語 4分 → 復習${Math.min(80,dw)}枚 6分 → 英文問題${np}問 5分
     ${newToday()?`／今日はすでに${newToday()}語`:''}</span></button>
   <button class="mode" data-go="ten"><span class="pill">${Math.min(10,nn)+Math.min(25,dw)+Math.max(0,1-probToday())}枚</span><b>10分コース</b>
     <span>疲れた日はこちら。単語 → 英文1問 → 取りこぼし</span></button>
