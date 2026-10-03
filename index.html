@@ -258,7 +258,7 @@ const STEPLABEL = ['当日','翌日','3日後','1週間','2週間','1か月'];
 const WORDT = ['w','pr','vb','ch','gr'];     // 単語プール
 const PROBT = ['tf','sc','cz','rd','cl','cb'];  // 英文問題プール
 
-const APP_VER='1.13.0', APP_BUILD='2026-09-26';
+const APP_VER='1.14.0', APP_BUILD='2026-10-04';
 const KEY='engtrainer_v1';
 let S = null, view='home', ses=null;
 
@@ -1011,11 +1011,14 @@ function vSession(){
   return head + renderCard(c);
 }
 
-function chips(c){
-  const u = (UNITS.find(u=>u[0]===c.u)||[0,''])[1];
-  /* 章タグは用語集のページ割りに由来するズレがあるため表示しない */
-  return `<div><span class="chip dr">${esc(c.tp||'')}</span>${u?`<span class="chip">${esc(u)}</span>`:''}
-    ${c.sb?`<span class="chip">${esc(c.sb)}</span>`:''}</div>`;
+/* 論点タグは答えのヒントになるため、裏（答えを見たあと）にだけ出す */
+function chips(c){ return ''; }
+function tagsHTML(c){
+  const t=[];
+  if(c.tp) t.push(`<span class="chip dr">${esc(c.tp)}</span>`);
+  if(c.sb) t.push(`<span class="chip">${esc(c.sb)}</span>`);
+  if(!t.length) return '';
+  return `<div style="margin-top:14px">${t.join('')}</div>`;
 }
 
 function renderCard(c){
@@ -1096,9 +1099,10 @@ function renderCard(c){
         : `<button class="hintbtn" data-hint="1">語句のヒントを見る</button>`));
   } else if(c.t==='cz'){
     const M=markHTML(c.e);
-    body = `<div class="muted">空欄に入る語は？ — ${esc(c.ti)}</div>
+    body = `<div class="muted">空欄に入る語は？</div>
       <div class="front small en">${M.html.replace('(  A  )','<b style="color:var(--cr)">(&nbsp;&nbsp;A&nbsp;&nbsp;)</b>')}</div>` +
       (shown?`<div class="hr"></div>
+        <div class="muted">${esc(c.ti)}</div>
         <div class="sec"><h4>判断の根拠</h4><div class="exp">${esc(c.x)}</div></div>
         <div class="sec"><h4>全文の意味</h4><div style="font-size:14px">${esc(c.j)}</div></div>
         <div class="sec"><h4>この場面の語</h4>${voHTML(c.vo)}</div>
@@ -1141,7 +1145,7 @@ function renderCard(c){
       return `<button class="${cls}" data-pick="${i}"><span class="en">${esc(t)}</span></button>`;
     }).join('')+`</div>`;
   }
-  return `<div class="qcard">${chips(c)}${body}</div>${chos}`;
+  return `<div class="qcard">${body}${shown?tagsHTML(c):''}</div>${chos}`;
 }
 
 function bar(){
