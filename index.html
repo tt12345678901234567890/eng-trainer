@@ -258,7 +258,7 @@ const STEPLABEL = ['当日','翌日','3日後','1週間','2週間','1か月'];
 const WORDT = ['w','pr','vb','ch','gr'];     // 単語プール
 const PROBT = ['tf','sc','cz','rd','cl','cb'];  // 英文問題プール
 
-const APP_VER='1.12.0', APP_BUILD='2026-09-26';
+const APP_VER='1.13.0', APP_BUILD='2026-09-26';
 const KEY='engtrainer_v1';
 let S = null, view='home', ses=null;
 
@@ -384,10 +384,25 @@ function dueList(pool){
   const t=today();
   return S.order[pool].filter(id=>{const x=S.cards[id]; return x && x.d<=t;});
 }
-/* 今日すでに答えたカードは復習から外す（同じ日に何度も出さない） */
+/* 今日すでに答えたカードは復習から外す（同じ日に何度も出さない）。
+   期限が古いものから選ぶので、待たされ続けるカードが出ない。 */
 function dueFresh(pool){
   const t=today();
-  return dueList(pool).filter(id=>S.cards[id].seen!==t);
+  return dueList(pool).filter(id=>S.cards[id].seen!==t)
+    .sort((a,b)=>{
+      const xa=S.cards[a], xb=S.cards[b];
+      if(xa.d!==xb.d) return xa.d < xb.d ? -1 : 1;   // 期限の古い順
+      return a-b;
+    });
+}
+/* 出題順を混ぜる（並び順で覚えてしまうのを防ぐ） */
+function shuffle(arr){
+  const a=arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    const t=a[i]; a[i]=a[j]; a[j]=t;
+  }
+  return a;
 }
 function newList(pool, n){
   const out=[];
@@ -696,6 +711,7 @@ function loadPhase(){
   while(ses.pi < ses.M.phases.length){
     const p = ses.M.phases[ses.pi];
     ses.queue = p.get();
+    if(p.k==='due' || p.k==='miss') ses.queue = shuffle(ses.queue);
     ses.i=0; ses.shown=false; ses.pick=null; ses.graded=false; ses.hint=false; ses.phaseElapsed=0;
     if(ses.queue.length) return;
     ses.pi++;
