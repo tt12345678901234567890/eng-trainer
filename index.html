@@ -258,7 +258,7 @@ const STEPLABEL = ['当日','翌日','3日後','1週間','2週間','1か月'];
 const WORDT = ['w','pr','vb','ch','gr'];     // 単語プール
 const PROBT = ['tf','sc','cz','rd','cl','cb'];  // 英文問題プール
 
-const APP_VER='1.14.0', APP_BUILD='2026-10-04';
+const APP_VER='1.15.0', APP_BUILD='2026-10-07';
 const KEY='engtrainer_v1';
 let S = null, view='home', ses=null;
 
@@ -333,6 +333,7 @@ async function load(){
   if(!S || !S.cards) S = blank();
   if(!S.order || S.ov!==4){ S.order = buildOrder(); S.ov = 4; }
   bakN = Object.keys(S.cards).length;
+  if(S.cur && S.cur.d !== today()){ S.cur = null; }   /* 前日までの中断は持ち越さない */
 }
 let saveT=null, lastSaved=0, bakN=0;
 function serialize(){ S.ts=Date.now(); return JSON.stringify(S); }
@@ -661,7 +662,7 @@ function saveCur(){
   else {
     S.cur={m:ses.mode, pi:ses.pi, i:ses.i, q:ses.queue.slice(), ms:ses.miss.slice(),
            ac:ses.active||0, pe:ses.phaseElapsed||0, dn:ses.done||0, rt:ses.right||0,
-           d:today()};
+           d:ses.date || today()};   /* 開始した日を保つ。離脱のたびに今日の日付で上書きしない */
   }
   save();
 }
@@ -686,7 +687,8 @@ function resumeSession(){
   const M=MODES[c.m];
   ses={mode:c.m, M, pi:c.pi, queue:c.q.filter(id=>BYID[id]), miss:(c.ms||[]).filter(id=>BYID[id]),
        i:Math.min(c.i, c.q.length-1), shown:false, pick:null, graded:false, hint:false,
-       t0:Date.now(), active:c.ac||0, phaseElapsed:c.pe||0, done:c.dn||0, right:c.rt||0};
+       t0:Date.now(), active:c.ac||0, phaseElapsed:c.pe||0, done:c.dn||0, right:c.rt||0,
+       date:c.d};
   lastAct=Date.now(); lastTick=Date.now();
   if(ses.i>=ses.queue.length){ ses.pi++; loadPhase(); }
   if(ses.pi>=ses.M.phases.length || !ses.queue.length){ ses=null; S.cur=null; save();
@@ -698,7 +700,7 @@ function startSession(mode){
   if(canResume(mode)){ return resumeSession(); }
   const M = MODES[mode];
   ses = {mode, M, pi:0, queue:[], miss:[], i:0, shown:false, pick:null, graded:false, hint:false,
-         t0:Date.now(), active:0, phaseElapsed:0, done:0, right:0};
+         t0:Date.now(), active:0, phaseElapsed:0, done:0, right:0, date:today()};
   lastAct=Date.now(); lastTick=Date.now();
   loadPhase();
   if(ses.pi>=ses.M.phases.length || !ses.queue.length){
@@ -719,6 +721,9 @@ function loadPhase(){
   ses.queue=[];
 }
 function nextCard(){
+  if(ses && ses.date && ses.date !== today()){      /* 日付が変わったら打ち切る */
+    ses=null; S.cur=null; save(); view='home'; render(); return;
+  }
   ses.shown=false; ses.pick=null; ses.graded=false; ses.hint=false; ses.i++;
   if(ses.i>=ses.queue.length){ ses.pi++; loadPhase(); }
   if(ses.pi>=ses.M.phases.length){ view='fin'; S.cur=null; save(); }
@@ -1343,7 +1348,7 @@ function vMore(){
   ${backupPanel(false)}
   <div class="panel"><div class="eyebrow">バージョン</div>
     <div class="muted"><b>アプリ v${APP_VER}</b>（${APP_BUILD}）／
-      教材データ v${(DATA&&DATA.v)||'—'}（カード ${CARDS.length}枚・語義辞書 ${Object.keys(WD).length}語）<br>
+      教材データ v${(DATA&&DATA.v)||'—'}（${(DATA&&DATA.built)||'—'}・カード ${CARDS.length}枚・語義辞書 ${Object.keys(WD).length}語）<br>
       index.html を差し替えたあとは、ここの番号が変わっているか確認してください。
       変わっていなければ画面を下に引っ張って再読み込み。</div>
     <label class="big solid" style="display:grid;place-items:center;margin-top:10px;min-height:48px;cursor:pointer">
